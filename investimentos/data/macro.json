@@ -3,11 +3,23 @@
   "ipca_12m": 0.04576119675071877,
   "ipca_ultimo_mes": 0.008199999999999999,
   "ipca_mes_referencia": "09/2026",
+  "ipca_no_ano": null,
+  "igpm_12m": null,
+  "ipca_esperado_12m": 0.045336,
+  "juro_real_selic": null,
+  "juro_real_cdi": null,
+  "meta_inflacao": 0.03,
   "selic_meta": 0.1375,
-  "cdi_12m": 0.14268554100596198,
+  "cdi_12m": 0.1365,
   "dolar": 5.5007,
   "fonte_dolar": "BCB PTAX",
-  "fonte_cdi": "BCB 12 (acumulado dos últimos 12 meses)",
-  "erros": {},
-  "atualizado_em": "2026-10-27T10:57:52"
+  "fonte_cdi": "BCB 4389 (taxa anualizada atual)",
+  "erros": {
+    "ipca": "ReadTimeout: HTTPSConnectionPool(host='api.bcb.gov.br', port=443): Read timed out. (read timeout=30)",
+    "igpm": "ReadTimeout: HTTPSConnectionPool(host='api.bcb.gov.br', port=443): Read timed out. (read timeout=30)",
+    "selic": "ReadTimeout: HTTPSConnectionPool(host='api.bcb.gov.br', port=443): Read timed out. (read timeout=30)",
+    "cdi_diario": "ReadTimeout: HTTPSConnectionPool(host='api.bcb.gov.br', port=443): Read timed out. (read timeout=30)",
+    "dolar": "HTTPError: 502 Server Error: Bad Gateway for url: https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados/ultimos/1?formato=json"
+  },
+  "atualizado_em": "2026-10-27T13:13:46"
 }
