@@ -140,7 +140,15 @@ SERIES_BCB = {
     "cdi_diario": 12,       # CDI diário (% a.d.)
     "cdi_anual": 4389,      # CDI anualizado (% a.a.), reserva
     "dolar_ptax": 1,        # Dólar PTAX venda (R$)
+    "igpm_mensal": 189,     # IGP-M variação mensal (%)
 }
+# Expectativas de mercado (boletim Focus): IPCA esperado para os próximos 12 meses
+URL_FOCUS_IPCA_12M = (
+    "https://olinda.bcb.gov.br/olinda/servico/Expectativas/versao/v1/odata/"
+    "ExpectativasMercadoInflacao12Meses?$top=1&$orderby=Data%20desc"
+    "&$filter=Indicador%20eq%20'IPCA'%20and%20Suavizada%20eq%20'S'&$format=json"
+)
+META_INFLACAO = 0.03   # meta do Banco Central para o IPCA (% a.a.)
 
 # Cabeçalho usado nas requisições HTTP (alguns sites bloqueiam clientes sem User-Agent)
 HTTP_HEADERS = {

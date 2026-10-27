@@ -9,7 +9,7 @@ inflação, Selic, CDI, dólar e a sua carteira.
 
 | Página | Conteúdo |
 |---|---|
-| Visão geral | IPCA 12m, Selic, CDI, dólar, taxa mínima de atratividade e o top 10 de cada método |
+| Visão geral | IPCA (12m, no ano, esperado pelo Focus), IGP-M, Selic, CDI, juro real, dólar, taxa mínima de atratividade e o top 10 de cada método |
 | Fórmula Mágica | Ranking de Greenblatt (EV/EBIT baixo + ROIC alto) |
 | Graham | P/L, P/VP, P/L x P/VP, liquidez corrente, dívida e margem de segurança sobre o preço justo √(22,5 x LPA x VPA) |
 | Dividendos | Método Bazin (DY ≥ 6%, preço teto = DPA / 6%) com os setores perenes de Barsi |
@@ -28,8 +28,9 @@ Todos os limites (DY mínimo, P/L máximo, ROE mínimo etc.) ficam em
   papel vem da página de detalhes e fica em cache em `investimentos/data/setores_br.csv`.
 - **Yahoo Finance** (biblioteca `yfinance`): fundamentos das ações americanas da
   lista `TICKERS_US`, cotações dos ETFs e dos ativos da carteira, dólar reserva.
-- **Banco Central (API SGS)**: IPCA mensal (433), meta Selic (432), CDI diário
-  (12, com reserva no CDI anualizado 4389) e dólar PTAX (1).
+- **Banco Central (API SGS)**: IPCA mensal (433), IGP-M mensal (189), meta Selic (432),
+  CDI diário (12, com reserva no CDI anualizado 4389) e dólar PTAX (1). Expectativa de IPCA
+  12 meses do boletim Focus (API Olinda).
 
 Se uma fonte falhar, a ferramenta mantém os dados da execução anterior e
 registra a falha e os avisos da execução em `investimentos/data/ultima_atualizacao.json`
@@ -111,6 +112,9 @@ investimentos/
 ```
 
 Rodar os testes: `python -m pytest`.
+
+Se a atualização falhar no seu computador, rode `python -m investimentos.diagnostico`:
+ele testa cada biblioteca e cada site e imprime um relatório para identificar a causa.
 
 ## Avisos
 

@@ -48,6 +48,27 @@ def serie_para_dataframe(registros: list[dict]) -> pd.DataFrame:
     return df.dropna().sort_values("data").reset_index(drop=True)
 
 
+def obter_focus_ipca_12m() -> float:
+    """Mediana das expectativas do boletim Focus para o IPCA nos próximos 12 meses (fração)."""
+    resposta = requests.get(config.URL_FOCUS_IPCA_12M, headers=config.HTTP_HEADERS, timeout=config.HTTP_TIMEOUT)
+    resposta.raise_for_status()
+    return focus_para_fracao(resposta.json())
+
+
+def focus_para_fracao(payload: dict) -> float:
+    valores = payload.get("value") or []
+    if not valores:
+        raise ValueError("resposta do Focus sem valores")
+    return float(valores[0]["Mediana"]) / 100.0
+
+
+def juro_real(taxa_nominal: float, inflacao: float) -> float:
+    """Equação de Fisher: (1 + nominal) / (1 + inflação) - 1."""
+    if taxa_nominal is None or inflacao is None or math.isnan(taxa_nominal) or math.isnan(inflacao):
+        return math.nan
+    return (1 + taxa_nominal) / (1 + inflacao) - 1
+
+
 def acumular(df: pd.DataFrame, ultimos: int | None = None) -> float:
     """Acumula variações percentuais mensais/diárias: prod(1 + v/100) - 1."""
     if df.empty:
@@ -63,6 +84,12 @@ def obter_macro() -> dict:
         "ipca_12m": math.nan,
         "ipca_ultimo_mes": math.nan,
         "ipca_mes_referencia": None,
+        "ipca_no_ano": math.nan,
+        "igpm_12m": math.nan,
+        "ipca_esperado_12m": math.nan,
+        "juro_real_selic": math.nan,
+        "juro_real_cdi": math.nan,
+        "meta_inflacao": config.META_INFLACAO,
         "selic_meta": math.nan,
         "cdi_12m": math.nan,
         "dolar": math.nan,
@@ -75,9 +102,22 @@ def obter_macro() -> dict:
         macro["ipca_12m"] = acumular(ipca)
         macro["ipca_ultimo_mes"] = float(ipca["valor"].iloc[-1]) / 100.0
         macro["ipca_mes_referencia"] = ipca["data"].iloc[-1].strftime("%m/%Y")
+        ano_atual = ipca["data"].iloc[-1].year
+        macro["ipca_no_ano"] = acumular(ipca[ipca["data"].dt.year == ano_atual])
     except Exception as erro:  # noqa: BLE001
         log.warning("Falha ao obter IPCA no BCB: %s", erro)
         macro["erros"]["ipca"] = f"{type(erro).__name__}: {erro}"
+    try:
+        igpm = obter_serie(config.SERIES_BCB["igpm_mensal"], 12)
+        macro["igpm_12m"] = acumular(igpm)
+    except Exception as erro:  # noqa: BLE001
+        log.warning("Falha ao obter IGP-M no BCB: %s", erro)
+        macro["erros"]["igpm"] = f"{type(erro).__name__}: {erro}"
+    try:
+        macro["ipca_esperado_12m"] = obter_focus_ipca_12m()
+    except Exception as erro:  # noqa: BLE001
+        log.warning("Falha ao obter expectativa Focus: %s", erro)
+        macro["erros"]["focus"] = f"{type(erro).__name__}: {erro}"
     try:
         selic = obter_serie(config.SERIES_BCB["selic_meta"], 1)
         macro["selic_meta"] = float(selic["valor"].iloc[-1]) / 100.0
@@ -107,4 +147,6 @@ def obter_macro() -> dict:
     except Exception as erro:  # noqa: BLE001
         log.warning("Falha ao obter dólar no BCB: %s", erro)
         macro["erros"]["dolar"] = f"{type(erro).__name__}: {erro}"
+    macro["juro_real_selic"] = juro_real(macro["selic_meta"], macro["ipca_12m"])
+    macro["juro_real_cdi"] = juro_real(macro["cdi_12m"], macro["ipca_12m"])
     return macro

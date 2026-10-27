@@ -152,6 +152,7 @@ def test_normalizar_info_yahoo_descarta_pvp_com_escala_errada():
 def test_bcb_cdi_acumula_serie_diaria_por_periodo(monkeypatch):
     def falsa_serie(codigo, ultimos):
         valores = {433: [{"data": f"01/{m:02d}/2026", "valor": "0.40"} for m in range(1, 13)],
+                   189: [{"data": f"01/{m:02d}/2026", "valor": "0.20"} for m in range(1, 13)],
                    432: [{"data": "01/10/2026", "valor": "13.75"}], 1: [{"data": "24/10/2026", "valor": "5.50"}]}[codigo]
         return bcb.serie_para_dataframe(valores[-ultimos:])
 
@@ -163,6 +164,7 @@ def test_bcb_cdi_acumula_serie_diaria_por_periodo(monkeypatch):
 
     monkeypatch.setattr(bcb, "obter_serie", falsa_serie)
     monkeypatch.setattr(bcb, "obter_serie_periodo", falsa_periodo)
+    monkeypatch.setattr(bcb, "obter_focus_ipca_12m", lambda: 0.04)
     macro = bcb.obter_macro()
     assert chamadas == [(12, 365)]
     assert macro["cdi_12m"] == pytest.approx(1.0005 ** 10 - 1)
@@ -174,11 +176,13 @@ def test_bcb_cdi_usa_reserva_anualizada(monkeypatch):
         raise ConnectionError("fora do ar")
 
     monkeypatch.setattr(bcb, "obter_serie_periodo", falsa_periodo)
+    monkeypatch.setattr(bcb, "obter_focus_ipca_12m", lambda: 0.04)
 
     def falsa_serie(codigo, ultimos):
         if codigo == 12:
             raise ConnectionError("fora do ar")
         valores = {433: [{"data": f"01/{m:02d}/2026", "valor": "0.40"} for m in range(1, 13)],
+                   189: [{"data": f"01/{m:02d}/2026", "valor": "0.20"} for m in range(1, 13)],
                    432: [{"data": "01/10/2026", "valor": "13.75"}],
                    4389: [{"data": "24/10/2026", "valor": "13.65"}],
                    1: [{"data": "24/10/2026", "valor": "5.50"}]}[codigo]
@@ -188,7 +192,7 @@ def test_bcb_cdi_usa_reserva_anualizada(monkeypatch):
     macro = bcb.obter_macro()
     assert macro["cdi_12m"] == pytest.approx(0.1365)
     assert "4389" in macro["fonte_cdi"]
-    assert "cdi_diario" in macro["erros"]
+    assert set(macro["erros"]) == {"cdi_diario"}
     assert macro["selic_meta"] == pytest.approx(0.1375)
 
 
@@ -200,3 +204,30 @@ def test_obter_setores_aborta_apos_falhas_seguidas(tmp_path, monkeypatch):
     monkeypatch.setattr(fundamentus.config, "PAUSA_ENTRE_REQUISICOES", 0)
     with pytest.raises(RuntimeError):
         fundamentus.obter_setores_br([f"T{i}" for i in range(10)], caminho=tmp_path / "s.csv")
+
+
+def test_focus_e_juro_real():
+    assert bcb.focus_para_fracao({"value": [{"Indicador": "IPCA", "Data": "2026-10-24", "Mediana": 4.12}]}) == pytest.approx(0.0412)
+    with pytest.raises(ValueError):
+        bcb.focus_para_fracao({"value": []})
+    assert bcb.juro_real(0.1375, 0.0458) == pytest.approx(1.1375 / 1.0458 - 1)
+    assert math.isnan(bcb.juro_real(float("nan"), 0.04))
+
+
+def test_obter_macro_ipca_no_ano_e_igpm(monkeypatch):
+    def falsa_serie(codigo, ultimos):
+        valores = {433: [{"data": f"01/{m:02d}/2025", "valor": "0.50"} for m in range(10, 13)] + [{"data": f"01/{m:02d}/2026", "valor": "0.40"} for m in range(1, 10)],
+                   189: [{"data": f"01/{m:02d}/2026", "valor": "0.20"} for m in range(1, 13)],
+                   432: [{"data": "01/10/2026", "valor": "13.75"}], 1: [{"data": "24/10/2026", "valor": "5.50"}]}[codigo]
+        return bcb.serie_para_dataframe(valores[-ultimos:])
+
+    monkeypatch.setattr(bcb, "obter_serie", falsa_serie)
+    monkeypatch.setattr(bcb, "obter_serie_periodo", lambda codigo, dias: bcb.serie_para_dataframe([{"data": "01/10/2026", "valor": "0.05"}] * 250))
+    monkeypatch.setattr(bcb, "obter_focus_ipca_12m", lambda: 0.0412)
+    macro = bcb.obter_macro()
+    assert macro["ipca_no_ano"] == pytest.approx(1.004 ** 9 - 1)
+    assert macro["ipca_12m"] == pytest.approx(1.005 ** 3 * 1.004 ** 9 - 1)
+    assert macro["igpm_12m"] == pytest.approx(1.002 ** 12 - 1)
+    assert macro["ipca_esperado_12m"] == pytest.approx(0.0412)
+    assert macro["juro_real_selic"] == pytest.approx(1.1375 / (1 + macro["ipca_12m"]) - 1)
+    assert macro["erros"] == {}

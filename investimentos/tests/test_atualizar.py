@@ -32,6 +32,7 @@ def test_pipeline_offline(tmp_path, monkeypatch):
 
     def falsa_serie(codigo, ultimos):
         valores = {433: [{"data": f"01/{m:02d}/2026", "valor": "0.40"} for m in range(1, 13)],
+                   189: [{"data": f"01/{m:02d}/2026", "valor": "0.20"} for m in range(1, 13)],
                    432: [{"data": "01/10/2026", "valor": "10.50"}],
                    12: [{"data": "01/10/2026", "valor": "0.04"}] * 252,
                    1: [{"data": "24/10/2026", "valor": "5.20"}]}[codigo]
@@ -39,6 +40,7 @@ def test_pipeline_offline(tmp_path, monkeypatch):
 
     monkeypatch.setattr(bcb, "obter_serie", falsa_serie)
     monkeypatch.setattr(bcb, "obter_serie_periodo", lambda codigo, dias: falsa_serie(codigo, 252))
+    monkeypatch.setattr(bcb, "obter_focus_ipca_12m", lambda: 0.04)
 
     def falsas_cotacoes(tickers_yahoo):
         return pd.DataFrame([{"ticker_yahoo": t, "preco": 100.0, "data": "2026-10-24"} for t in tickers_yahoo])
@@ -92,6 +94,7 @@ def test_pipeline_usa_dados_anteriores_quando_fonte_falha(tmp_path, monkeypatch)
     monkeypatch.setattr(fundamentus, "baixar_html", quebra)
     monkeypatch.setattr(bcb, "obter_serie", quebra)
     monkeypatch.setattr(bcb, "obter_serie_periodo", quebra)
+    monkeypatch.setattr(bcb, "obter_focus_ipca_12m", quebra)
     monkeypatch.setattr(yahoo, "obter_cotacoes", quebra)
 
     status = atualizar.executar(incluir_us=False, incluir_setores=False)

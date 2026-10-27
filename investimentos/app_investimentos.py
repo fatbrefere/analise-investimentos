@@ -23,6 +23,7 @@ if str(RAIZ) not in sys.path:
 from investimentos import carteira as mod_carteira  # noqa: E402
 from investimentos import config, estrategias  # noqa: E402
 from investimentos.atualizar import ARQ_COTACOES, ARQ_FUNDAMENTOS, ARQ_MACRO, ARQ_STATUS  # noqa: E402
+from investimentos.fontes.bcb import juro_real  # noqa: E402
 
 st.set_page_config(page_title="Análise de Ações", page_icon="📈", layout="wide")
 
@@ -174,13 +175,44 @@ base = estrategias.filtrar_liquidez(base, liquidez_minima_br=liquidez_br, volume
 ranking = estrategias.consolidar(base, taxa_minima=taxa_minima, parametros=parametros)
 
 
+def _m(chave: str) -> float:
+    valor = macro.get(chave)
+    return float(valor) if valor is not None else math.nan
+
+
 def cabecalho_macro() -> None:
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("IPCA 12 meses", _pct(ipca), help=f"Último mês: {macro.get('ipca_mes_referencia') or '—'}")
     c2.metric("Selic (meta)", _pct(selic))
-    c3.metric("CDI 12 meses", _pct(cdi))
+    c3.metric("CDI 12 meses", _pct(cdi), help=str(macro.get("fonte_cdi") or ""))
     c4.metric("Dólar", _moeda(dolar), help=str(macro.get("fonte_dolar") or ""))
     c5.metric("Taxa mínima de atratividade", _pct(taxa_minima), help="Maior entre IPCA + prêmio de risco e a Selic. Earnings yield (1/P/L) abaixo disso não compensa o risco.")
+
+
+def painel_inflacao() -> None:
+    """Bloco "Inflação e juros": o que a carteira precisa bater e por quê."""
+    st.subheader("Inflação e juros: o que a carteira precisa bater")
+    juro_real_selic = juro_real(selic, ipca)
+    juro_real_cdi = juro_real(cdi, ipca)
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("IPCA 12 meses", _pct(ipca), help="Inflação oficial acumulada nos últimos 12 meses. Abaixo disso a carteira perde poder de compra.")
+    c2.metric("IPCA no ano", _pct(_m("ipca_no_ano")), help=f"Acumulado de janeiro até {macro.get('ipca_mes_referencia') or '—'}.")
+    c3.metric("IPCA esperado 12 meses (Focus)", _pct(_m("ipca_esperado_12m")), help="Mediana das projeções do mercado no boletim Focus do Banco Central.")
+    c4.metric("IGP-M 12 meses", _pct(_m("igpm_12m")), help="Inflação dos aluguéis e do atacado (FGV). Útil para FIIs e contratos.")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Selic (meta)", _pct(selic), help="Juro nominal básico: o que o Tesouro Selic rende antes da inflação.")
+    c2.metric("Juro real da Selic", _pct(juro_real_selic), help="(1 + Selic) / (1 + IPCA) - 1. É quanto a renda fixa sem risco rende ACIMA da inflação.")
+    c3.metric("Juro real do CDI", _pct(juro_real_cdi), help="(1 + CDI 12m) / (1 + IPCA 12m) - 1.")
+    c4.metric("Meta de inflação", _pct(float(macro.get("meta_inflacao") or config.META_INFLACAO)), help="Meta do Banco Central para o IPCA.")
+    st.markdown(
+        f"""
+**Como ler.** Inflação é só o IPCA ({_pct(ipca)}): é o quanto o dinheiro parado perde por ano. A Selic ({_pct(selic)}) não é inflação,
+é o juro que o governo paga; a diferença entre as duas, o **juro real** ({_pct(juro_real_selic)}), é o que a renda fixa sem risco entrega de ganho verdadeiro.
+Para a renda variável fazer sentido ela precisa, no médio e longo prazo, render mais que a Selic (senão o Tesouro Selic seria melhor e sem risco),
+e com folga: por isso a **taxa mínima de atratividade** ({_pct(taxa_minima)}) é o maior entre IPCA + prêmio de risco e a Selic.
+Uma ação com earnings yield (lucro / preço) acima disso está, pelo menos pelo lucro atual, "pagando" mais que o título público.
+"""
+    )
 
 
 def mostrar_lista(df: pd.DataFrame, colunas_extra: dict[str, str], nome: str, destaque: str) -> None:
@@ -200,6 +232,7 @@ def mostrar_lista(df: pd.DataFrame, colunas_extra: dict[str, str], nome: str, de
 if pagina == "Visão geral":
     st.title("Visão geral do dia")
     cabecalho_macro()
+    painel_inflacao()
     etapas = status.get("etapas", {})
     falhas = [k for k, v in etapas.items() if not v.get("ok")]
     if falhas:
@@ -315,7 +348,7 @@ elif pagina == "Carteira e diversificação":
     c1.metric("Patrimônio (R$)", _moeda(res["valor_brl"]))
     c2.metric("Custo (R$)", _moeda(res["custo_brl"]))
     c3.metric("Resultado", _moeda(res["resultado_brl"]), _pct(res["resultado_pct"]))
-    c4.metric("Retorno real necessário", _pct(ipca), help="Inflação dos últimos 12 meses: abaixo disso a carteira perdeu poder de compra.")
+    c4.metric("Inflação (IPCA 12m) / juro real", f"{_pct(ipca)} / {_pct(juro_real(selic, ipca))}", help="Abaixo do IPCA a carteira perdeu poder de compra; abaixo de IPCA + juro real, o Tesouro Selic teria sido melhor.")
     if res["sem_cotacao"]:
         st.warning(f"{res['sem_cotacao']} posição(ões) sem cotação: foi usado o preço médio. Rode a atualização ou preencha `valor_atual`.")
 
