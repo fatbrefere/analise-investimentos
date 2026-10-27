@@ -82,9 +82,31 @@ faz commit dos arquivos de `investimentos/data/`. Para ativar:
    **Read and write permissions**.
 3. Para testar na hora: aba *Actions > Atualizar dados de investimentos > Run workflow*.
 
-Se você publicar o painel no Streamlit Cloud (gratuito),
-aponte-o para `investimentos/app_investimentos.py`: ele lê os CSVs do
-repositório, então cada commit do workflow atualiza o painel sozinho.
+### Abrir no celular: Streamlit Community Cloud (gratuito)
+
+1. Entre em https://share.streamlit.io com a conta do GitHub.
+2. *Create app* > *Deploy a public app from GitHub*: repositório
+   `fatbrefere/analise-investimentos`, branch `main`, arquivo
+   `investimentos/app_investimentos.py`. Como o repositório é privado, autorize
+   o app do Streamlit a acessá-lo quando for pedido.
+3. Em *Advanced settings* escolha Python 3.12.
+4. Depois do deploy, abra a URL no celular e use "Adicionar à tela inicial".
+
+O painel na nuvem lê os CSVs do repositório, então cada commit do workflow
+(dias úteis às 20h30) atualiza o app sozinho. Os botões de atualização local,
+download do GitHub e diagnóstico ficam ocultos lá.
+
+Para ver a sua carteira no celular sem colocá-la no Git: no painel do
+Streamlit Cloud, *Settings > Secrets*, cole o conteúdo do seu `carteira.csv`
+assim (as três aspas são obrigatórias):
+
+```toml
+carteira_csv = """
+ticker,tipo,moeda,quantidade,preco_medio,valor_atual,descricao
+PETR4,Ação BR,BRL,100,32.50,,Petrobras
+,Renda Fixa BR,BRL,1,15000,15800,Tesouro IPCA+ 2035
+"""
+```
 
 ### Opção 2: Agendador de Tarefas do Windows
 

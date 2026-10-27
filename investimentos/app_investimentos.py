@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import subprocess
 import sys
 from io import BytesIO
@@ -26,6 +27,10 @@ from investimentos.atualizar import ARQ_COTACOES, ARQ_FUNDAMENTOS, ARQ_MACRO, AR
 from investimentos.fontes.bcb import juro_real  # noqa: E402
 
 st.set_page_config(page_title="Análise de Ações", page_icon="📈", layout="wide")
+
+# No Streamlit Community Cloud o repositório fica em /mount/src e é reclonado a cada
+# commit, então os botões que mexem em Git ou rodam a coleta localmente não fazem sentido.
+NA_NUVEM = str(RAIZ).startswith("/mount/src") or os.environ.get("INVESTIMENTOS_NUVEM") == "1"
 
 
 # ---------------------------------------------------------------------------
@@ -123,7 +128,9 @@ with st.sidebar:
     pagina = st.radio("Página", ["Visão geral", "Fórmula Mágica", "Graham", "Dividendos", "Buffett", "Consenso", "Carteira e diversificação", "Histórico"])
     st.markdown("---")
     st.caption(f"Última atualização: {status.get('atualizado_em', 'nunca')}")
-    if st.button("🔄 Atualizar dados agora", help="Baixa fundamentos, macro e cotações (pode levar alguns minutos)."):
+    if NA_NUVEM:
+        st.caption("Os dados são atualizados automaticamente pelo GitHub Actions nos dias úteis às 20h30.")
+    if not NA_NUVEM and st.button("🔄 Atualizar dados agora", help="Baixa fundamentos, macro e cotações (pode levar alguns minutos)."):
         with st.spinner("Atualizando..."):
             proc = subprocess.run([sys.executable, "-m", "investimentos.atualizar"], cwd=RAIZ, capture_output=True, text=True)
         if proc.returncode == 0:
@@ -133,7 +140,7 @@ with st.sidebar:
             st.code(proc.stderr[-3000:])
         st.cache_data.clear()
         st.rerun()
-    if st.button("⬇️ Baixar dados prontos do GitHub", help="Usa os dados gerados pelo GitHub Actions (não precisa de internet para os sites de dados)."):
+    if not NA_NUVEM and st.button("⬇️ Baixar dados prontos do GitHub", help="Usa os dados gerados pelo GitHub Actions (não precisa de internet para os sites de dados)."):
         try:
             from investimentos import git_util
             st.success(git_util.baixar_dados_do_github())
@@ -141,9 +148,10 @@ with st.sidebar:
             st.error(f"Não foi possível baixar: {erro}")
         st.cache_data.clear()
         st.rerun()
-    with st.expander("🩺 Diagnóstico"):
-        st.caption("Testa bibliotecas e sites de dados neste computador. Depois, envie o relatório ao GitHub para análise.")
-        if st.button("Rodar diagnóstico"):
+    with st.expander("🩺 Diagnóstico", expanded=False) if not NA_NUVEM else st.container():
+        if not NA_NUVEM:
+            st.caption("Testa bibliotecas e sites de dados neste computador. Depois, envie o relatório ao GitHub para análise.")
+        if not NA_NUVEM and st.button("Rodar diagnóstico"):
             from investimentos import diagnostico
             with st.spinner("Testando..."):
                 relatorio, problemas = diagnostico.executar()
@@ -363,11 +371,24 @@ elif pagina == "Consenso":
 
 elif pagina == "Carteira e diversificação":
     st.title("Carteira e diversificação")
-    arquivo = config.ARQUIVO_CARTEIRA if config.ARQUIVO_CARTEIRA.exists() else config.ARQUIVO_CARTEIRA_EXEMPLO
-    if arquivo == config.ARQUIVO_CARTEIRA_EXEMPLO:
-        st.info("Mostrando a carteira de exemplo. Copie `investimentos/carteira_exemplo.csv` para `investimentos/carteira.csv` e preencha com as suas posições.")
+    carteira_secrets = None
     try:
-        cart = mod_carteira.carregar_carteira(arquivo)
+        carteira_secrets = st.secrets.get("carteira_csv")  # Streamlit Cloud: Settings > Secrets
+    except Exception:  # noqa: BLE001 - sem arquivo de secrets
+        carteira_secrets = None
+    try:
+        if carteira_secrets:
+            from io import StringIO
+            cart = mod_carteira.normalizar_carteira(pd.read_csv(StringIO(str(carteira_secrets).strip()), dtype={"ticker": str, "tipo": str, "moeda": str, "descricao": str}))
+            st.caption("Carteira carregada dos secrets do Streamlit.")
+        else:
+            arquivo = config.ARQUIVO_CARTEIRA if config.ARQUIVO_CARTEIRA.exists() else config.ARQUIVO_CARTEIRA_EXEMPLO
+            if arquivo == config.ARQUIVO_CARTEIRA_EXEMPLO:
+                if NA_NUVEM:
+                    st.info("Mostrando a carteira de exemplo. No Streamlit Cloud, cole sua carteira em *Settings > Secrets* como `carteira_csv` (veja o README).")
+                else:
+                    st.info("Mostrando a carteira de exemplo. Copie `investimentos/carteira_exemplo.csv` para `investimentos/carteira.csv` e preencha com as suas posições.")
+            cart = mod_carteira.carregar_carteira(arquivo)
     except ValueError as erro:
         st.error(str(erro))
         st.stop()
