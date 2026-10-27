@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import math
+import time
 from datetime import date, timedelta
 
 import pandas as pd
@@ -21,12 +22,28 @@ URL_SGS = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados/ultimos/
 URL_SGS_PERIODO = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados?formato=json&dataInicial={inicio}&dataFinal={fim}"
 
 
+def _get_json(url: str, tentativas: int = 3):
+    """GET com repetição: a API do BCB costuma dar timeout ou 502 de forma passageira."""
+    ultimo_erro: Exception | None = None
+    for tentativa in range(tentativas):
+        try:
+            resposta = requests.get(url, headers=config.HTTP_HEADERS, timeout=config.HTTP_TIMEOUT)
+            if resposta.status_code >= 500:
+                resposta.raise_for_status()
+            resposta.raise_for_status()
+            return resposta.json()
+        except (requests.Timeout, requests.ConnectionError, requests.HTTPError) as erro:
+            if isinstance(erro, requests.HTTPError) and erro.response is not None and erro.response.status_code < 500:
+                raise  # erro de cliente (400, 404): repetir não ajuda
+            ultimo_erro = erro
+            log.warning("BCB tentativa %d/%d falhou (%s); aguardando.", tentativa + 1, tentativas, erro)
+            time.sleep(2 * (tentativa + 1))
+    raise ultimo_erro  # type: ignore[misc]
+
+
 def obter_serie(codigo: int, ultimos: int) -> pd.DataFrame:
     """Retorna DataFrame com colunas data (datetime) e valor (float)."""
-    url = URL_SGS.format(codigo=codigo, n=ultimos)
-    resposta = requests.get(url, headers=config.HTTP_HEADERS, timeout=config.HTTP_TIMEOUT)
-    resposta.raise_for_status()
-    return serie_para_dataframe(resposta.json())
+    return serie_para_dataframe(_get_json(URL_SGS.format(codigo=codigo, n=ultimos)))
 
 
 def obter_serie_periodo(codigo: int, dias: int) -> pd.DataFrame:
@@ -34,9 +51,7 @@ def obter_serie_periodo(codigo: int, dias: int) -> pd.DataFrame:
     fim = date.today()
     inicio = fim - timedelta(days=dias)
     url = URL_SGS_PERIODO.format(codigo=codigo, inicio=inicio.strftime("%d/%m/%Y"), fim=fim.strftime("%d/%m/%Y"))
-    resposta = requests.get(url, headers=config.HTTP_HEADERS, timeout=config.HTTP_TIMEOUT)
-    resposta.raise_for_status()
-    return serie_para_dataframe(resposta.json())
+    return serie_para_dataframe(_get_json(url))
 
 
 def serie_para_dataframe(registros: list[dict]) -> pd.DataFrame:
@@ -50,9 +65,7 @@ def serie_para_dataframe(registros: list[dict]) -> pd.DataFrame:
 
 def obter_focus_ipca_12m() -> float:
     """Mediana das expectativas do boletim Focus para o IPCA nos próximos 12 meses (fração)."""
-    resposta = requests.get(config.URL_FOCUS_IPCA_12M, headers=config.HTTP_HEADERS, timeout=config.HTTP_TIMEOUT)
-    resposta.raise_for_status()
-    return focus_para_fracao(resposta.json())
+    return focus_para_fracao(_get_json(config.URL_FOCUS_IPCA_12M))
 
 
 def focus_para_fracao(payload: dict) -> float:

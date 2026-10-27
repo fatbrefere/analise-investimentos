@@ -3,6 +3,7 @@ import json
 import math
 
 import pandas as pd
+import pytest
 
 from investimentos import atualizar, config
 from investimentos.fontes import bcb, fundamentus, yahoo
@@ -21,6 +22,15 @@ def test_pipeline_offline(tmp_path, monkeypatch):
         return html_resultado() if url == fundamentus.URL_RESULTADO else html_detalhes()
 
     monkeypatch.setattr(fundamentus, "baixar_html", falso_baixar)
+    pedidos_detalhe = []
+    _baixar_original = fundamentus.baixar_html
+
+    def registra(url=fundamentus.URL_RESULTADO):
+        if "detalhes" in url:
+            pedidos_detalhe.append(url)
+        return _baixar_original(url)
+
+    monkeypatch.setattr(fundamentus, "baixar_html", registra)
 
     def falso_us(tickers=None, com_demonstrativos=True):
         linhas = [yahoo.normalizar_info("AAPL", {"currentPrice": 200.0, "trailingPE": 30.0, "priceToBook": 45.0, "trailingAnnualDividendRate": 1.0, "returnOnEquity": 1.5, "profitMargins": 0.25, "averageVolume": 50e6, "trailingEps": 6.5, "bookValue": 4.4}),
@@ -67,6 +77,7 @@ def test_pipeline_offline(tmp_path, monkeypatch):
     macro = json.loads((tmp_path / "macro.json").read_text(encoding="utf-8"))
     assert math.isclose(macro["ipca_12m"], 1.004 ** 12 - 1)
     assert macro["erros"] == {}
+    assert macro["juro_real_selic"] == pytest.approx(1.105 / (1.004 ** 12) - 1)
     assert status["avisos"] == []
     assert status["setores_br_em_cache"] > 0
     assert (tmp_path / "setores_br.csv").exists()
@@ -79,6 +90,9 @@ def test_pipeline_offline(tmp_path, monkeypatch):
     assert "MXRF11" in set(cot["ticker"])
 
     assert len(list((tmp_path / "historico").glob("ranking_*.csv"))) == 1
+    # só papéis da B3 presentes no Fundamentus vão à página de detalhes (nada de MXRF11, AAPL, VOO)
+    assert pedidos_detalhe and all(any(t in u for t in ("PETR4", "ITSA4", "TAEE11", "WEGE3", "MGLU3", "BBAS3", "ILIQ3", "SANB11")) for u in pedidos_detalhe)
+    assert not any(t in u for u in pedidos_detalhe for t in ("MXRF11", "AAPL", "VOO"))
 
 
 def test_pipeline_usa_dados_anteriores_quando_fonte_falha(tmp_path, monkeypatch):

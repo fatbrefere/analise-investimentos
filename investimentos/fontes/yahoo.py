@@ -176,6 +176,18 @@ def ticker_yahoo(ticker: str, pais: str | None = None) -> str:
     return ticker
 
 
+def _serie_fechamento(dados: pd.DataFrame, ticker: str) -> pd.Series:
+    """Extrai a coluna Close de um download do yfinance, com colunas simples ou em dois níveis."""
+    if isinstance(dados.columns, pd.MultiIndex):
+        if ticker in dados.columns.get_level_values(0):
+            return dados[ticker]["Close"]
+        if "Close" in dados.columns.get_level_values(0):
+            fechamento = dados["Close"]
+            return fechamento[ticker] if ticker in fechamento.columns else fechamento.iloc[:, 0]
+        raise KeyError(ticker)
+    return dados["Close"]
+
+
 def obter_cotacoes(tickers_yahoo: list[str]) -> pd.DataFrame:
     """Último preço de fechamento para uma lista de tickers no formato do Yahoo."""
     yf = _yf()
@@ -186,7 +198,7 @@ def obter_cotacoes(tickers_yahoo: list[str]) -> pd.DataFrame:
     linhas = []
     for ticker in tickers_yahoo:
         try:
-            serie = dados[ticker]["Close"] if len(tickers_yahoo) > 1 else dados["Close"]
+            serie = _serie_fechamento(dados, ticker)
             serie = serie.dropna()
             if serie.empty:
                 continue

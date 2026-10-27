@@ -231,3 +231,52 @@ def test_obter_macro_ipca_no_ano_e_igpm(monkeypatch):
     assert macro["ipca_esperado_12m"] == pytest.approx(0.0412)
     assert macro["juro_real_selic"] == pytest.approx(1.1375 / (1 + macro["ipca_12m"]) - 1)
     assert macro["erros"] == {}
+
+
+def test_serie_fechamento_formatos():
+    idx = pd.to_datetime(["2026-10-23", "2026-10-24"])
+    simples = pd.DataFrame({"Close": [1.0, 2.0], "Open": [1.0, 2.0]}, index=idx)
+    assert yahoo._serie_fechamento(simples, "BRL=X").tolist() == [1.0, 2.0]
+    por_ticker = pd.DataFrame({("BRL=X", "Close"): [5.0, 5.1], ("BRL=X", "Open"): [5.0, 5.1]}, index=idx)
+    assert yahoo._serie_fechamento(por_ticker, "BRL=X").tolist() == [5.0, 5.1]
+    por_campo = pd.DataFrame({("Close", "BRL=X"): [5.0, 5.1], ("Open", "BRL=X"): [5.0, 5.1]}, index=idx)
+    assert yahoo._serie_fechamento(por_campo, "BRL=X").tolist() == [5.0, 5.1]
+
+
+def test_bcb_repete_em_erro_passageiro(monkeypatch):
+    import requests as rq
+
+    chamadas = []
+
+    class Resp:
+        def __init__(self, status, payload=None):
+            self.status_code = status
+            self._payload = payload
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                erro = rq.HTTPError(f"{self.status_code}")
+                erro.response = self
+                raise erro
+
+        def json(self):
+            return self._payload
+
+    def falso_get(url, headers=None, timeout=None):
+        chamadas.append(url)
+        if len(chamadas) == 1:
+            raise rq.Timeout("lento")
+        if len(chamadas) == 2:
+            return Resp(502)
+        return Resp(200, [{"data": "01/10/2026", "valor": "13.75"}])
+
+    monkeypatch.setattr(bcb.requests, "get", falso_get)
+    monkeypatch.setattr(bcb.time, "sleep", lambda s: None)
+    df = bcb.obter_serie(432, 1)
+    assert len(chamadas) == 3 and df["valor"].iloc[0] == 13.75
+
+    chamadas.clear()
+    monkeypatch.setattr(bcb.requests, "get", lambda url, headers=None, timeout=None: (chamadas.append(url), Resp(400))[1])
+    with pytest.raises(rq.HTTPError):
+        bcb.obter_serie(12, 252)
+    assert len(chamadas) == 1   # erro 400 não repete

@@ -116,6 +116,8 @@ def enriquecer_setores(df: pd.DataFrame, status: dict, carteira: pd.DataFrame) -
     candidatos = previa.head(150)["ticker"].tolist()
     candidatos += previa[previa["qtd_estrategias_aprovado"] > 0]["ticker"].tolist()
     candidatos += carteira["ticker"].tolist()
+    existentes = set(br["ticker"])
+    candidatos = [t for t in dict.fromkeys(candidatos) if t in existentes]  # FIIs e ações US não estão no Fundamentus
     setores = etapa("setores_br", status, fundamentus.obter_setores_br, candidatos)
     if setores is None:
         setores = fundamentus.carregar_cache_setores()
@@ -149,6 +151,9 @@ def obter_macro(status: dict) -> dict:
             continue
         if _vazio(macro.get(chave)) and not _vazio(valor):
             macro[chave] = valor
+    # juro real depende de Selic/CDI e IPCA, que podem ter vindo do arquivo anterior
+    macro["juro_real_selic"] = bcb.juro_real(float(macro.get("selic_meta") or math.nan), float(macro.get("ipca_12m") or math.nan))
+    macro["juro_real_cdi"] = bcb.juro_real(float(macro.get("cdi_12m") or math.nan), float(macro.get("ipca_12m") or math.nan))
     macro["atualizado_em"] = datetime.now().isoformat(timespec="seconds")
     return macro
 
