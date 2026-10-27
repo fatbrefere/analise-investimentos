@@ -13,6 +13,7 @@ def test_pipeline_offline(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "PASTA_DADOS", tmp_path)
     monkeypatch.setattr(config, "PASTA_HISTORICO", tmp_path / "historico")
     monkeypatch.setattr(fundamentus, "ARQUIVO_CACHE_SETORES", tmp_path / "setores_br.csv")
+    monkeypatch.setattr(config, "PAUSA_ENTRE_REQUISICOES", 0)
     for nome in ("ARQ_FUNDAMENTOS", "ARQ_RANKING", "ARQ_MACRO", "ARQ_COTACOES", "ARQ_STATUS"):
         monkeypatch.setattr(atualizar, nome, tmp_path / getattr(atualizar, nome).name)
 
@@ -62,6 +63,10 @@ def test_pipeline_offline(tmp_path, monkeypatch):
 
     macro = json.loads((tmp_path / "macro.json").read_text(encoding="utf-8"))
     assert math.isclose(macro["ipca_12m"], 1.004 ** 12 - 1)
+    assert macro["erros"] == {}
+    assert status["avisos"] == []
+    assert status["setores_br_em_cache"] > 0
+    assert (tmp_path / "setores_br.csv").exists()
     assert macro["selic_meta"] == 0.105 and macro["dolar"] == 5.2
 
     cot = pd.read_csv(tmp_path / "cotacoes.csv")
@@ -89,5 +94,9 @@ def test_pipeline_usa_dados_anteriores_quando_fonte_falha(tmp_path, monkeypatch)
 
     status = atualizar.executar(incluir_us=False, incluir_setores=False)
     assert not status["etapas"]["fundamentus"]["ok"]
+    assert any("fundamentus" in a.lower() or "fora do ar" in a for a in status["avisos"])
+    texto = (tmp_path / "macro.json").read_text(encoding="utf-8")
+    assert "NaN" not in texto                       # JSON válido: null em vez de NaN
+    json.loads(texto)
     assert status["papeis_br"] == 8                      # veio do arquivo anterior
     assert (tmp_path / "ranking.csv").exists()

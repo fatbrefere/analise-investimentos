@@ -15,10 +15,13 @@ ARQUIVO_CARTEIRA_EXEMPLO = PASTA_BASE / "carteira_exemplo.csv"
 # ---------------------------------------------------------------------------
 # Filtros gerais (aplicados antes de qualquer estratégia)
 # ---------------------------------------------------------------------------
-# Liquidez mínima em 2 meses (R$) para ações brasileiras. Evita papéis
+# Volume médio diário mínimo (R$, média dos últimos 2 meses, coluna
+# "Liq.2meses" do Fundamentus) para ações brasileiras. Evita papéis
 # ilíquidos que aparecem "baratos" só porque ninguém negocia.
 LIQUIDEZ_MINIMA_BR = 1_000_000.0
 # Volume médio diário mínimo (US$) para ações americanas.
+# Pausa entre consultas de setor no Fundamentus (segundos), para não ser bloqueado.
+PAUSA_ENTRE_REQUISICOES = 0.5
 VOLUME_MINIMO_US = 1_000_000.0
 
 # ---------------------------------------------------------------------------
@@ -135,6 +138,7 @@ SERIES_BCB = {
     "ipca_mensal": 433,     # IPCA variação mensal (%)
     "selic_meta": 432,      # Meta Selic (% a.a.)
     "cdi_diario": 12,       # CDI diário (% a.d.)
+    "cdi_anual": 4389,      # CDI anualizado (% a.a.), reserva
     "dolar_ptax": 1,        # Dólar PTAX venda (R$)
 }
 

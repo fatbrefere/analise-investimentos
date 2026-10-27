@@ -24,15 +24,16 @@ Todos os limites (DY mínimo, P/L máximo, ROE mínimo etc.) ficam em
 ## Fontes de dados (todas gratuitas, sem chave)
 
 - **Fundamentus** (`fundamentus.com.br/resultado.php`): todos os papéis da B3 com
-  P/L, P/VP, DY, EV/EBIT, ROIC, ROE, margens, liquidez e dívida. O setor de cada
+  P/L, P/VP, DY, EV/EBIT, ROIC, ROE, margens, volume médio diário ("Liq.2meses") e dívida. O setor de cada
   papel vem da página de detalhes e fica em cache em `investimentos/data/setores_br.csv`.
 - **Yahoo Finance** (biblioteca `yfinance`): fundamentos das ações americanas da
   lista `TICKERS_US`, cotações dos ETFs e dos ativos da carteira, dólar reserva.
 - **Banco Central (API SGS)**: IPCA mensal (433), meta Selic (432), CDI diário
-  (12) e dólar PTAX (1).
+  (12, com reserva no CDI anualizado 4389) e dólar PTAX (1).
 
 Se uma fonte falhar, a ferramenta mantém os dados da execução anterior e
-registra a falha em `investimentos/data/ultima_atualizacao.json` (o painel avisa).
+registra a falha e os avisos da execução em `investimentos/data/ultima_atualizacao.json`
+(o painel avisa).
 
 ## Como usar
 

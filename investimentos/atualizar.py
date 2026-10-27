@@ -42,6 +42,30 @@ COLUNAS_HISTORICO = [
 ]
 
 
+class _ColetorAvisos(logging.Handler):
+    """Guarda os avisos/erros da execução para gravar em ultima_atualizacao.json."""
+
+    def __init__(self, maximo: int = 60):
+        super().__init__(level=logging.WARNING)
+        self.mensagens: list[str] = []
+        self.maximo = maximo
+
+    def emit(self, registro: logging.LogRecord) -> None:
+        if len(self.mensagens) < self.maximo:
+            self.mensagens.append(f"{registro.levelname} {registro.name}: {registro.getMessage()}"[:500])
+
+
+def _sem_nan(objeto):
+    """Troca NaN por None para o JSON ficar válido em qualquer leitor."""
+    if isinstance(objeto, dict):
+        return {k: _sem_nan(v) for k, v in objeto.items()}
+    if isinstance(objeto, list):
+        return [_sem_nan(v) for v in objeto]
+    if isinstance(objeto, float) and math.isnan(objeto):
+        return None
+    return objeto
+
+
 def _carregar_csv_anterior(caminho) -> pd.DataFrame:
     if caminho.exists():
         return pd.read_csv(caminho)
@@ -111,15 +135,19 @@ def enriquecer_setores(df: pd.DataFrame, status: dict, carteira: pd.DataFrame) -
 def obter_macro(status: dict) -> dict:
     anterior = json.loads(ARQ_MACRO.read_text(encoding="utf-8")) if ARQ_MACRO.exists() else {}
     macro = etapa("bcb", status, bcb.obter_macro) or dict(anterior)
-    if macro.get("dolar") is None or (isinstance(macro.get("dolar"), float) and math.isnan(macro["dolar"])):
+    def _vazio(v):
+        return v is None or (isinstance(v, float) and math.isnan(v))
+
+    if _vazio(macro.get("dolar")):
         dolar = etapa("dolar_yahoo", status, yahoo.obter_dolar)
         if dolar is not None and not math.isnan(dolar):
             macro["dolar"] = dolar
             macro["fonte_dolar"] = "Yahoo BRL=X"
     # mantém valores antigos quando o novo veio vazio
     for chave, valor in anterior.items():
-        atual = macro.get(chave)
-        if atual is None or (isinstance(atual, float) and math.isnan(atual)):
+        if chave == "erros":
+            continue
+        if _vazio(macro.get(chave)) and not _vazio(valor):
             macro[chave] = valor
     macro["atualizado_em"] = datetime.now().isoformat(timespec="seconds")
     return macro
@@ -157,6 +185,8 @@ def executar(incluir_us: bool = True, incluir_setores: bool = True) -> dict:
     config.PASTA_DADOS.mkdir(parents=True, exist_ok=True)
     status: dict = {}
     inicio = datetime.now()
+    coletor = _ColetorAvisos()
+    logging.getLogger().addHandler(coletor)
     carteira = carregar_carteira()
 
     fundamentos = obter_fundamentos(status, incluir_us)
@@ -165,7 +195,7 @@ def executar(incluir_us: bool = True, incluir_setores: bool = True) -> dict:
     fundamentos.to_csv(ARQ_FUNDAMENTOS, index=False)
 
     macro = obter_macro(status)
-    ARQ_MACRO.write_text(json.dumps(macro, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    ARQ_MACRO.write_text(json.dumps(_sem_nan(macro), ensure_ascii=False, indent=2, default=str), encoding="utf-8")
 
     taxa_minima = estrategias.taxa_minima_atratividade(
         float(macro.get("ipca_12m") or math.nan), selic=float(macro.get("selic_meta") or math.nan)
@@ -183,9 +213,12 @@ def executar(incluir_us: bool = True, incluir_setores: bool = True) -> dict:
         "papeis_br": int((fundamentos["pais"] == "BR").sum()),
         "papeis_us": int((fundamentos["pais"] == "US").sum()),
         "taxa_minima_atratividade": None if math.isnan(taxa_minima) else round(taxa_minima, 4),
+        "setores_br_em_cache": int(len(fundamentus.carregar_cache_setores())),
         "etapas": status,
+        "avisos": coletor.mensagens,
     }
-    ARQ_STATUS.write_text(json.dumps(status_final, ensure_ascii=False, indent=2), encoding="utf-8")
+    logging.getLogger().removeHandler(coletor)
+    ARQ_STATUS.write_text(json.dumps(_sem_nan(status_final), ensure_ascii=False, indent=2), encoding="utf-8")
     log.info("Atualização concluída em %.0fs. Status: %s", status_final["duracao_segundos"], {k: v["ok"] for k, v in status.items()})
     return status_final
 

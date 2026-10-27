@@ -80,6 +80,7 @@ def test_obter_setores_usa_cache(tmp_path, monkeypatch):
         return html_detalhes()
 
     monkeypatch.setattr(fundamentus, "baixar_html", falso_baixar)
+    monkeypatch.setattr(fundamentus.config, "PAUSA_ENTRE_REQUISICOES", 0)
     resultado = fundamentus.obter_setores_br(["PETR4", "ITSA4"], caminho=cache)
     assert chamadas == [fundamentus.URL_DETALHES.format(ticker="ITSA4")]
     assert set(resultado["ticker"]) == {"PETR4", "ITSA4"}
@@ -139,3 +140,38 @@ def test_bcb_serie_e_acumulado():
     assert bcb.acumular(df) == pytest.approx(1.005 * 1.01 * 1.0025 - 1)
     assert bcb.acumular(df, ultimos=1) == pytest.approx(0.0025)
     assert math.isnan(bcb.acumular(bcb.serie_para_dataframe([])))
+
+
+def test_normalizar_info_yahoo_descarta_pvp_com_escala_errada():
+    linha = yahoo.normalizar_info("BRK-B", {"currentPrice": 548.0, "priceToBook": 0.00105, "bookValue": 522225.9})
+    assert math.isnan(linha["pvp"]) and math.isnan(linha["vpa"])
+    linha = yahoo.normalizar_info("MCD", {"currentPrice": 300.0, "priceToBook": -60.0, "bookValue": -5.0})
+    assert linha["pvp"] == -60.0   # patrimônio negativo é informação real, fica
+
+
+def test_bcb_cdi_usa_reserva_anualizada(monkeypatch):
+    def falsa_serie(codigo, ultimos):
+        if codigo == 12:
+            raise ConnectionError("fora do ar")
+        valores = {433: [{"data": f"01/{m:02d}/2026", "valor": "0.40"} for m in range(1, 13)],
+                   432: [{"data": "01/10/2026", "valor": "13.75"}],
+                   4389: [{"data": "24/10/2026", "valor": "13.65"}],
+                   1: [{"data": "24/10/2026", "valor": "5.50"}]}[codigo]
+        return bcb.serie_para_dataframe(valores[-ultimos:])
+
+    monkeypatch.setattr(bcb, "obter_serie", falsa_serie)
+    macro = bcb.obter_macro()
+    assert macro["cdi_12m"] == pytest.approx(0.1365)
+    assert "4389" in macro["fonte_cdi"]
+    assert "cdi_diario" in macro["erros"]
+    assert macro["selic_meta"] == pytest.approx(0.1375)
+
+
+def test_obter_setores_aborta_apos_falhas_seguidas(tmp_path, monkeypatch):
+    def quebra(url):
+        raise ConnectionError("403")
+
+    monkeypatch.setattr(fundamentus, "baixar_html", quebra)
+    monkeypatch.setattr(fundamentus.config, "PAUSA_ENTRE_REQUISICOES", 0)
+    with pytest.raises(RuntimeError):
+        fundamentus.obter_setores_br([f"T{i}" for i in range(10)], caminho=tmp_path / "s.csv")

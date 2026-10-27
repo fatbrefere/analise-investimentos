@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import io
 import logging
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -152,13 +153,22 @@ def obter_setores_br(tickers: list[str], caminho: Path | None = None, maximo_nov
     conhecidos = set(cache["ticker"].astype(str))
     faltantes = [t for t in dict.fromkeys(tickers) if t not in conhecidos][:maximo_novos]
     novos = []
-    for ticker in faltantes:
+    falhas = 0
+    for i, ticker in enumerate(faltantes):
+        if i:
+            time.sleep(config.PAUSA_ENTRE_REQUISICOES)
         try:
             html = baixar_html(URL_DETALHES.format(ticker=ticker))
             dados = parse_detalhes(html)
+            if not any(dados.values()):
+                raise ValueError("página sem Empresa/Setor (layout mudou ou bloqueio)")
             novos.append({"ticker": ticker, **{k: dados.get(k) for k in ("nome", "setor", "subsetor")}})
         except Exception as erro:  # noqa: BLE001 - não interromper a atualização por um papel
+            falhas += 1
             log.warning("Falha ao buscar setor de %s: %s", ticker, erro)
+            if falhas >= 5 and not novos:
+                raise RuntimeError(f"{falhas} falhas seguidas ao consultar detalhes no Fundamentus; última: {erro}") from erro
+    log.info("Setores Fundamentus: %d novos, %d falhas, %d em cache.", len(novos), falhas, len(conhecidos))
     if novos:
         cache = pd.concat([cache, pd.DataFrame(novos)], ignore_index=True)
         cache = cache.drop_duplicates(subset="ticker")

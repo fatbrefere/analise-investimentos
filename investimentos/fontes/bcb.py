@@ -56,6 +56,8 @@ def obter_macro() -> dict:
         "cdi_12m": math.nan,
         "dolar": math.nan,
         "fonte_dolar": None,
+        "fonte_cdi": None,
+        "erros": {},
     }
     try:
         ipca = obter_serie(config.SERIES_BCB["ipca_mensal"], 12)
@@ -64,20 +66,34 @@ def obter_macro() -> dict:
         macro["ipca_mes_referencia"] = ipca["data"].iloc[-1].strftime("%m/%Y")
     except Exception as erro:  # noqa: BLE001
         log.warning("Falha ao obter IPCA no BCB: %s", erro)
+        macro["erros"]["ipca"] = f"{type(erro).__name__}: {erro}"
     try:
         selic = obter_serie(config.SERIES_BCB["selic_meta"], 1)
         macro["selic_meta"] = float(selic["valor"].iloc[-1]) / 100.0
     except Exception as erro:  # noqa: BLE001
         log.warning("Falha ao obter Selic no BCB: %s", erro)
+        macro["erros"]["selic"] = f"{type(erro).__name__}: {erro}"
     try:
         cdi = obter_serie(config.SERIES_BCB["cdi_diario"], 252)
+        if cdi.empty:
+            raise ValueError("série vazia")
         macro["cdi_12m"] = acumular(cdi)
+        macro["fonte_cdi"] = "BCB 12 (acumulado 252 dias úteis)"
     except Exception as erro:  # noqa: BLE001
-        log.warning("Falha ao obter CDI no BCB: %s", erro)
+        log.warning("Falha ao obter CDI diário no BCB (%s); tentando CDI anualizado.", erro)
+        macro["erros"]["cdi_diario"] = f"{type(erro).__name__}: {erro}"
+        try:
+            cdi_aa = obter_serie(config.SERIES_BCB["cdi_anual"], 1)
+            macro["cdi_12m"] = float(cdi_aa["valor"].iloc[-1]) / 100.0
+            macro["fonte_cdi"] = "BCB 4389 (taxa anualizada atual)"
+        except Exception as erro2:  # noqa: BLE001
+            log.warning("Falha ao obter CDI anualizado no BCB: %s", erro2)
+            macro["erros"]["cdi_anual"] = f"{type(erro2).__name__}: {erro2}"
     try:
         dolar = obter_serie(config.SERIES_BCB["dolar_ptax"], 1)
         macro["dolar"] = float(dolar["valor"].iloc[-1])
         macro["fonte_dolar"] = "BCB PTAX"
     except Exception as erro:  # noqa: BLE001
         log.warning("Falha ao obter dólar no BCB: %s", erro)
+        macro["erros"]["dolar"] = f"{type(erro).__name__}: {erro}"
     return macro

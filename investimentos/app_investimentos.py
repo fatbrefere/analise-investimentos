@@ -135,7 +135,7 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("Filtros")
     paises = st.multiselect("Mercado", ["BR", "US"], default=["BR", "US"])
-    liquidez_br = st.number_input("Liquidez mínima B3 (R$ em 2 meses)", min_value=0.0, value=float(config.LIQUIDEZ_MINIMA_BR), step=500_000.0, format="%.0f")
+    liquidez_br = st.number_input("Volume médio diário mínimo B3 (R$)", min_value=0.0, value=float(config.LIQUIDEZ_MINIMA_BR), step=500_000.0, format="%.0f")
     volume_us = st.number_input("Volume mínimo EUA (US$/dia)", min_value=0.0, value=float(config.VOLUME_MINIMO_US), step=500_000.0, format="%.0f")
     st.markdown("---")
     st.subheader("Parâmetros das estratégias")

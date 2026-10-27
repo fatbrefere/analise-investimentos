@@ -99,6 +99,14 @@ def normalizar_info(ticker: str, info: dict, dre: pd.DataFrame | None = None, ba
     if math.isnan(divida_patrimonio) and patrimonio and not math.isnan(divida_total) and patrimonio > 0:
         divida_patrimonio = divida_total / patrimonio
 
+    pvp = _num(info.get("priceToBook"))
+    vpa = _num(info.get("bookValue"))
+    # O Yahoo às vezes devolve bookValue/priceToBook em escala errada (ex.: BRK-B
+    # com P/VP 0,001). Um P/VP positivo abaixo de 0,05 é lixo, não pechincha.
+    if not math.isnan(pvp) and 0 < pvp < 0.05:
+        pvp = math.nan
+        vpa = math.nan
+
     return {
         "ticker": ticker,
         "nome": info.get("longName") or info.get("shortName"),
@@ -107,7 +115,7 @@ def normalizar_info(ticker: str, info: dict, dre: pd.DataFrame | None = None, ba
         "setor": info.get("sector"),
         "preco": preco,
         "pl": _num(info.get("trailingPE")),
-        "pvp": _num(info.get("priceToBook")),
+        "pvp": pvp,
         "dy": dy,
         "ev_ebit": ev_ebit,
         "ev_ebitda": ev_ebitda,
@@ -122,7 +130,7 @@ def normalizar_info(ticker: str, info: dict, dre: pd.DataFrame | None = None, ba
         "liquidez": _num(info.get("averageVolume")) * (preco if not math.isnan(preco) else math.nan),
         "patrimonio_liquido": patrimonio,
         "lpa": _num(info.get("trailingEps")),
-        "vpa": _num(info.get("bookValue")),
+        "vpa": vpa,
         "dpa": dpa,
     }
 
