@@ -1,8 +1,8 @@
 """
 Diagnóstico do ambiente: testa bibliotecas e o acesso a cada site de dados.
 
-Uso:  python -m investimentos.diagnostico
-Cole a saída na conversa para identificar o que está falhando.
+Uso:  python -m investimentos.diagnostico            # mostra o relatório
+      python -m investimentos.diagnostico --enviar   # e envia ao GitHub (branch diagnostico-local)
 """
 from __future__ import annotations
 
@@ -45,6 +45,29 @@ def _rodar() -> int:
         print(f"Certificados (certifi): {certifi.where()}")
     except Exception as erro:  # noqa: BLE001
         print(f"certifi indisponível: {erro}")
+    print("\n== Git ==")
+    try:
+        from investimentos import git_util
+
+        print(f"  commit local: {git_util._git('log', '-1', '--format=%h %s')}")
+        try:
+            git_util._git("fetch", "origin", "main")
+            print(f"  commit GitHub: {git_util._git('log', '-1', '--format=%h %s', 'origin/main')}")
+            diff = git_util._git("diff", "--stat", "origin/main")
+            print("  diferenças em relação ao GitHub: " + (("\n    " + diff.replace("\n", "\n    ")) if diff else "nenhuma"))
+        except Exception as erro:  # noqa: BLE001
+            print(f"  não foi possível comparar com o GitHub: {erro}")
+        alterados = git_util._git("status", "--short")
+        print("  arquivos alterados localmente: " + (("\n    " + alterados.replace("\n", "\n    ")) if alterados else "nenhum"))
+    except Exception as erro:  # noqa: BLE001
+        print(f"  git indisponível: {erro}")
+    try:
+        from investimentos.fontes import bcb as _bcb
+
+        print(f"  bcb.py em uso: {_bcb.__file__} | tem juro_real: {hasattr(_bcb, 'juro_real')}")
+    except Exception as erro:  # noqa: BLE001
+        print(f"  erro ao importar bcb: {erro}")
+
     status = config.PASTA_DADOS / "ultima_atualizacao.json"
     if status.exists():
         try:
@@ -103,12 +126,26 @@ def _rodar() -> int:
     return problemas
 
 
-def main() -> int:
+def main(argv=None) -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Diagnóstico do ambiente da ferramenta de investimentos.")
+    parser.add_argument("--enviar", action="store_true", help="envia o relatório ao GitHub no branch diagnostico-local")
+    args = parser.parse_args(argv)
     relatorio, problemas = executar()
     print(relatorio)
     config.PASTA_DADOS.mkdir(parents=True, exist_ok=True)
     ARQUIVO_RELATORIO.write_text(relatorio, encoding="utf-8")
     print(f"Relatório salvo em {ARQUIVO_RELATORIO}")
+    if args.enviar:
+        from investimentos import git_util
+
+        arquivos = {"diagnostico/diagnostico_local.txt": ARQUIVO_RELATORIO}
+        status = config.PASTA_DADOS / "ultima_atualizacao.json"
+        if status.exists():
+            arquivos["diagnostico/ultima_atualizacao_local.json"] = status
+        commit = git_util.enviar_arquivos_para_branch(arquivos, "Diagnóstico local (linha de comando)")
+        print(f"Relatório enviado ao GitHub: branch {git_util.BRANCH_DIAGNOSTICO}, commit {commit[:7]}")
     return 0 if problemas == 0 else 1
 
 
