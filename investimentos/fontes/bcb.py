@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import math
-from datetime import date
+from datetime import date, timedelta
 
 import pandas as pd
 import requests
@@ -18,11 +18,22 @@ from investimentos import config
 log = logging.getLogger(__name__)
 
 URL_SGS = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados/ultimos/{n}?formato=json"
+URL_SGS_PERIODO = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados?formato=json&dataInicial={inicio}&dataFinal={fim}"
 
 
 def obter_serie(codigo: int, ultimos: int) -> pd.DataFrame:
     """Retorna DataFrame com colunas data (datetime) e valor (float)."""
     url = URL_SGS.format(codigo=codigo, n=ultimos)
+    resposta = requests.get(url, headers=config.HTTP_HEADERS, timeout=config.HTTP_TIMEOUT)
+    resposta.raise_for_status()
+    return serie_para_dataframe(resposta.json())
+
+
+def obter_serie_periodo(codigo: int, dias: int) -> pd.DataFrame:
+    """Série por intervalo de datas (a forma documentada da API; 'ultimos/N' falha para séries diárias longas)."""
+    fim = date.today()
+    inicio = fim - timedelta(days=dias)
+    url = URL_SGS_PERIODO.format(codigo=codigo, inicio=inicio.strftime("%d/%m/%Y"), fim=fim.strftime("%d/%m/%Y"))
     resposta = requests.get(url, headers=config.HTTP_HEADERS, timeout=config.HTTP_TIMEOUT)
     resposta.raise_for_status()
     return serie_para_dataframe(resposta.json())
@@ -74,11 +85,11 @@ def obter_macro() -> dict:
         log.warning("Falha ao obter Selic no BCB: %s", erro)
         macro["erros"]["selic"] = f"{type(erro).__name__}: {erro}"
     try:
-        cdi = obter_serie(config.SERIES_BCB["cdi_diario"], 252)
+        cdi = obter_serie_periodo(config.SERIES_BCB["cdi_diario"], 365)
         if cdi.empty:
             raise ValueError("série vazia")
         macro["cdi_12m"] = acumular(cdi)
-        macro["fonte_cdi"] = "BCB 12 (acumulado 252 dias úteis)"
+        macro["fonte_cdi"] = "BCB 12 (acumulado dos últimos 12 meses)"
     except Exception as erro:  # noqa: BLE001
         log.warning("Falha ao obter CDI diário no BCB (%s); tentando CDI anualizado.", erro)
         macro["erros"]["cdi_diario"] = f"{type(erro).__name__}: {erro}"

@@ -35,4 +35,7 @@ def html_detalhes() -> str:
     <tr><td class="label">Empresa</td><td class="data">PETROBRAS PN</td><td class="label">Data últ cot</td><td class="data">26/10/2026</td></tr>
     <tr><td class="label"><span class="help">?</span>Setor</td><td class="data">Petróleo, Gás e Biocombustíveis</td><td class="label">Min 52 sem</td><td class="data">28,00</td></tr>
     <tr><td class="label">Subsetor</td><td class="data">Exploração, Refino e Distribuição</td><td class="label">Max 52 sem</td><td class="data">42,00</td></tr>
-    </table></body></html>"""
+    <tr><td class="label">Vol $ méd (2m)</td><td class="data">1.500.000.000</td></tr>
+    </table>
+    <table><tr><td>Oscilações</td></tr><tr><td class="label">Dia</td><td class="data">1,2%</td><td></td><td></td></tr></table>
+    </body></html>"""

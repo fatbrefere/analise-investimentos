@@ -124,18 +124,22 @@ def parse_detalhes(html: str) -> dict:
     except ValueError:
         return resultado
     for t in tabelas:
-        valores = t.astype(str).values.tolist()
+        # células vazias viram NaN (float) no pandas 3; normaliza tudo para texto
+        valores = t.fillna("").astype(str).values.tolist()
         for linha in valores:
             for i, celula in enumerate(linha):
-                rotulo = celula.replace("?", "").strip()
+                rotulo = str(celula).replace("?", "").strip()
                 if i + 1 >= len(linha):
                     continue
+                valor = str(linha[i + 1]).strip()
+                if not valor or valor == "nan":
+                    continue
                 if rotulo == "Empresa":
-                    resultado["nome"] = linha[i + 1].strip()
+                    resultado["nome"] = valor
                 elif rotulo == "Setor":
-                    resultado["setor"] = linha[i + 1].strip()
+                    resultado["setor"] = valor
                 elif rotulo == "Subsetor":
-                    resultado["subsetor"] = linha[i + 1].strip()
+                    resultado["subsetor"] = valor
     return resultado
 
 

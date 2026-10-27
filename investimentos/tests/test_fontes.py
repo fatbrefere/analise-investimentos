@@ -149,7 +149,32 @@ def test_normalizar_info_yahoo_descarta_pvp_com_escala_errada():
     assert linha["pvp"] == -60.0   # patrimônio negativo é informação real, fica
 
 
+def test_bcb_cdi_acumula_serie_diaria_por_periodo(monkeypatch):
+    def falsa_serie(codigo, ultimos):
+        valores = {433: [{"data": f"01/{m:02d}/2026", "valor": "0.40"} for m in range(1, 13)],
+                   432: [{"data": "01/10/2026", "valor": "13.75"}], 1: [{"data": "24/10/2026", "valor": "5.50"}]}[codigo]
+        return bcb.serie_para_dataframe(valores[-ultimos:])
+
+    chamadas = []
+
+    def falsa_periodo(codigo, dias):
+        chamadas.append((codigo, dias))
+        return bcb.serie_para_dataframe([{"data": f"{d:02d}/10/2026", "valor": "0.05"} for d in range(1, 11)])
+
+    monkeypatch.setattr(bcb, "obter_serie", falsa_serie)
+    monkeypatch.setattr(bcb, "obter_serie_periodo", falsa_periodo)
+    macro = bcb.obter_macro()
+    assert chamadas == [(12, 365)]
+    assert macro["cdi_12m"] == pytest.approx(1.0005 ** 10 - 1)
+    assert macro["erros"] == {}
+
+
 def test_bcb_cdi_usa_reserva_anualizada(monkeypatch):
+    def falsa_periodo(codigo, dias):
+        raise ConnectionError("fora do ar")
+
+    monkeypatch.setattr(bcb, "obter_serie_periodo", falsa_periodo)
+
     def falsa_serie(codigo, ultimos):
         if codigo == 12:
             raise ConnectionError("fora do ar")
