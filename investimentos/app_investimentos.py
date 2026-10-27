@@ -204,6 +204,16 @@ if pagina == "Visão geral":
     falhas = [k for k, v in etapas.items() if not v.get("ok")]
     if falhas:
         st.warning("Fontes com falha na última atualização: " + ", ".join(falhas) + ". Os dados dessas fontes são da execução anterior.")
+        with st.expander("Ver o motivo de cada falha"):
+            for nome in falhas:
+                st.markdown(f"**{nome}**: `{etapas[nome].get('erro')}`")
+            erros_texto = " ".join(str(etapas[n].get("erro")) for n in falhas)
+            if "No module named" in erros_texto:
+                st.info("Falta instalar bibliotecas no Python que está rodando o painel. No terminal, dentro da pasta do projeto, rode "
+                        "`python -m pip install -r requirements.txt` e depois `python -m streamlit run investimentos/app_investimentos.py`.")
+            if status.get("avisos"):
+                st.markdown("**Avisos da execução:**")
+                st.code("\n".join(status["avisos"]))
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Papéis analisados", len(ranking))
     c2.metric("Aprovados na Fórmula Mágica", int(ranking["aprovado_magica"].sum()))
