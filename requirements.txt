@@ -1,0 +1,10 @@
+pandas
+numpy
+streamlit
+plotly
+XlsxWriter
+openpyxl
+requests
+lxml
+yfinance
+pytest

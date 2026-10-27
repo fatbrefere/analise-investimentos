@@ -1,0 +1,11 @@
+ticker,tipo,moeda,quantidade,preco_medio,valor_atual,descricao
+PETR4,Ação BR,BRL,100,32.50,,Petrobras
+ITSA4,Ação BR,BRL,300,9.80,,Itaúsa
+TAEE11,Ação BR,BRL,50,34.00,,Taesa
+MXRF11,FII,BRL,200,10.20,,Maxi Renda
+HGLG11,FII,BRL,10,160.00,,CSHG Logística
+AAPL,Ação US,USD,5,170.00,,Apple
+JNJ,Ação US,USD,8,155.00,,Johnson & Johnson
+VOO,ETF US,USD,3,420.00,,S&P 500
+,Renda Fixa BR,BRL,1,15000.00,15800.00,Tesouro IPCA+ 2035
+,Caixa,BRL,1,3000.00,3000.00,Reserva de emergência (CDB liquidez diária)

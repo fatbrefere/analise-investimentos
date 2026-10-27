@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+investimentos/carteira.csv
+investimentos/data/atualizacao.log
