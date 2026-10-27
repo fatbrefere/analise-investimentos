@@ -4,3 +4,4 @@ __pycache__/
 .pytest_cache/
 investimentos/carteira.csv
 investimentos/data/atualizacao.log
+investimentos/data/diagnostico_local.txt

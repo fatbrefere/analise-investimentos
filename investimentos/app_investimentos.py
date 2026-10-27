@@ -133,6 +133,38 @@ with st.sidebar:
             st.code(proc.stderr[-3000:])
         st.cache_data.clear()
         st.rerun()
+    if st.button("⬇️ Baixar dados prontos do GitHub", help="Usa os dados gerados pelo GitHub Actions (não precisa de internet para os sites de dados)."):
+        try:
+            from investimentos import git_util
+            st.success(git_util.baixar_dados_do_github())
+        except Exception as erro:  # noqa: BLE001
+            st.error(f"Não foi possível baixar: {erro}")
+        st.cache_data.clear()
+        st.rerun()
+    with st.expander("🩺 Diagnóstico"):
+        st.caption("Testa bibliotecas e sites de dados neste computador. Depois, envie o relatório ao GitHub para análise.")
+        if st.button("Rodar diagnóstico"):
+            from investimentos import diagnostico
+            with st.spinner("Testando..."):
+                relatorio, problemas = diagnostico.executar()
+            config.PASTA_DADOS.mkdir(parents=True, exist_ok=True)
+            diagnostico.ARQUIVO_RELATORIO.write_text(relatorio, encoding="utf-8")
+            st.session_state["diagnostico"] = relatorio
+            st.session_state["diagnostico_problemas"] = problemas
+        if "diagnostico" in st.session_state:
+            n = st.session_state["diagnostico_problemas"]
+            (st.success if n == 0 else st.error)(f"{n} problema(s) encontrado(s)." if n else "Tudo OK neste computador.")
+            st.code(st.session_state["diagnostico"])
+            if st.button("Enviar relatório ao GitHub"):
+                try:
+                    from investimentos import git_util
+                    arquivos = {"diagnostico/diagnostico_local.txt": diagnostico.ARQUIVO_RELATORIO}
+                    if ARQ_STATUS.exists():
+                        arquivos["diagnostico/ultima_atualizacao_local.json"] = ARQ_STATUS
+                    commit = git_util.enviar_arquivos_para_branch(arquivos, "Diagnóstico local do painel")
+                    st.success(f"Enviado para o branch `{git_util.BRANCH_DIAGNOSTICO}` (commit {commit[:7]}).")
+                except Exception as erro:  # noqa: BLE001
+                    st.error(f"Falha ao enviar: {erro}")
     st.markdown("---")
     st.subheader("Filtros")
     paises = st.multiselect("Mercado", ["BR", "US"], default=["BR", "US"])

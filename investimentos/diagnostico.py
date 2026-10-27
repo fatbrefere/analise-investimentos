@@ -7,10 +7,16 @@ Cole a saída na conversa para identificar o que está falhando.
 from __future__ import annotations
 
 import importlib
+import io
+import json
+import os
 import platform
 import sys
+from contextlib import redirect_stdout
 
 from investimentos import config
+
+ARQUIVO_RELATORIO = config.PASTA_DADOS / "diagnostico_local.txt"
 
 SITES = {
     "Fundamentus (ações B3)": "https://www.fundamentus.com.br/resultado.php",
@@ -21,9 +27,35 @@ SITES = {
 }
 
 
-def main() -> int:
+def executar() -> tuple[str, int]:
+    """Roda todos os testes e devolve (relatório em texto, número de problemas)."""
+    saida = io.StringIO()
+    with redirect_stdout(saida):
+        problemas = _rodar()
+    return saida.getvalue(), problemas
+
+
+def _rodar() -> int:
     print(f"Python {sys.version.split()[0]} em {sys.executable}")
     print(f"Sistema: {platform.platform()}")
+    proxies = {k: v for k, v in os.environ.items() if k.upper() in ("HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE")}
+    print(f"Variáveis de proxy/certificado: {proxies or 'nenhuma'}")
+    try:
+        import certifi
+        print(f"Certificados (certifi): {certifi.where()}")
+    except Exception as erro:  # noqa: BLE001
+        print(f"certifi indisponível: {erro}")
+    status = config.PASTA_DADOS / "ultima_atualizacao.json"
+    if status.exists():
+        try:
+            dados = json.loads(status.read_text(encoding="utf-8"))
+            print(f"\n== Última atualização local ({dados.get('atualizado_em')}) ==")
+            for nome, etapa in dados.get("etapas", {}).items():
+                print(f"  {'OK  ' if etapa.get('ok') else 'ERRO'} {nome}: {etapa.get('erro') or ''}")
+            for aviso in dados.get("avisos", [])[:15]:
+                print(f"  aviso: {aviso[:300]}")
+        except Exception as erro:  # noqa: BLE001
+            print(f"  não foi possível ler {status}: {erro}")
     print("\n== Bibliotecas ==")
     problemas = 0
     for modulo in ("pandas", "numpy", "requests", "lxml", "yfinance", "streamlit", "plotly", "xlsxwriter", "openpyxl"):
@@ -68,6 +100,15 @@ def main() -> int:
         print(f"  ERRO {type(erro).__name__}: {erro}")
 
     print(f"\nResultado: {'tudo OK' if problemas == 0 else f'{problemas} problema(s) encontrado(s)'}")
+    return problemas
+
+
+def main() -> int:
+    relatorio, problemas = executar()
+    print(relatorio)
+    config.PASTA_DADOS.mkdir(parents=True, exist_ok=True)
+    ARQUIVO_RELATORIO.write_text(relatorio, encoding="utf-8")
+    print(f"Relatório salvo em {ARQUIVO_RELATORIO}")
     return 0 if problemas == 0 else 1
 
 
