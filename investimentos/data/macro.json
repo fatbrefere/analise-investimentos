@@ -4,8 +4,12 @@
   "ipca_ultimo_mes": 0.008199999999999999,
   "ipca_mes_referencia": "09/2026",
   "selic_meta": 0.1375,
-  "cdi_12m": NaN,
+  "cdi_12m": 0.1365,
   "dolar": 5.5007,
   "fonte_dolar": "BCB PTAX",
-  "atualizado_em": "2026-10-27T10:47:42"
+  "fonte_cdi": "BCB 4389 (taxa anualizada atual)",
+  "erros": {
+    "cdi_diario": "HTTPError: 400 Client Error: Bad Request for url: https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados/ultimos/252?formato=json"
+  },
+  "atualizado_em": "2026-10-27T10:52:33"
 }

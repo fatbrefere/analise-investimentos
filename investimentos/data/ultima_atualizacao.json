@@ -1,9 +1,10 @@
 {
-  "atualizado_em": "2026-10-27T10:47:43",
-  "duracao_segundos": 128.2,
+  "atualizado_em": "2026-10-27T10:52:34",
+  "duracao_segundos": 51.8,
   "papeis_br": 995,
   "papeis_us": 71,
   "taxa_minima_atratividade": 0.1375,
+  "setores_br_em_cache": 0,
   "etapas": {
     "fundamentus": {
       "ok": true,
@@ -14,8 +15,8 @@
       "erro": null
     },
     "setores_br": {
-      "ok": true,
-      "erro": null
+      "ok": false,
+      "erro": "RuntimeError: 5 falhas seguidas ao consultar detalhes no Fundamentus; última: 'float' object has no attribute 'replace'"
     },
     "bcb": {
       "ok": true,
@@ -25,5 +26,14 @@
       "ok": true,
       "erro": null
     }
-  }
+  },
+  "avisos": [
+    "WARNING investimentos.fontes.fundamentus: Falha ao buscar setor de SEER3: 'float' object has no attribute 'replace'",
+    "WARNING investimentos.fontes.fundamentus: Falha ao buscar setor de POMO3: 'float' object has no attribute 'replace'",
+    "WARNING investimentos.fontes.fundamentus: Falha ao buscar setor de POMO4: 'float' object has no attribute 'replace'",
+    "WARNING investimentos.fontes.fundamentus: Falha ao buscar setor de JHSF3: 'float' object has no attribute 'replace'",
+    "WARNING investimentos.fontes.fundamentus: Falha ao buscar setor de WIZC3: 'float' object has no attribute 'replace'",
+    "ERROR investimentos: Etapa 'setores_br' falhou",
+    "WARNING investimentos.fontes.bcb: Falha ao obter CDI diário no BCB (400 Client Error: Bad Request for url: https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados/ultimos/252?formato=json); tentando CDI anualizado."
+  ]
 }
