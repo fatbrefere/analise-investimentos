@@ -1,6 +1,6 @@
 {
-  "atualizado_em": "2026-10-27T13:13:47",
-  "duracao_segundos": 184.8,
+  "atualizado_em": "2026-10-27T13:18:18",
+  "duracao_segundos": 156.4,
   "papeis_br": 995,
   "papeis_us": 71,
   "taxa_minima_atratividade": 0.1375,
@@ -15,14 +15,10 @@
       "erro": null
     },
     "setores_br": {
-      "ok": false,
-      "erro": "RuntimeError: 5 falhas seguidas ao consultar detalhes no Fundamentus; última: `Import html5lib` failed.  Use pip, conda, or your preferred package management tool to install the html5lib package."
-    },
-    "bcb": {
       "ok": true,
       "erro": null
     },
-    "dolar_yahoo": {
+    "bcb": {
       "ok": true,
       "erro": null
     },
@@ -32,17 +28,7 @@
     }
   },
   "avisos": [
-    "WARNING investimentos.fontes.fundamentus: Falha ao buscar setor de MXRF11: página sem Empresa/Setor (layout mudou ou bloqueio)",
-    "WARNING investimentos.fontes.fundamentus: Falha ao buscar setor de HGLG11: página sem Empresa/Setor (layout mudou ou bloqueio)",
-    "WARNING investimentos.fontes.fundamentus: Falha ao buscar setor de AAPL: `Import html5lib` failed.  Use pip, conda, or your preferred package management tool to install the html5lib package.",
-    "WARNING investimentos.fontes.fundamentus: Falha ao buscar setor de JNJ: `Import html5lib` failed.  Use pip, conda, or your preferred package management tool to install the html5lib package.",
-    "WARNING investimentos.fontes.fundamentus: Falha ao buscar setor de VOO: `Import html5lib` failed.  Use pip, conda, or your preferred package management tool to install the html5lib package.",
-    "ERROR investimentos: Etapa 'setores_br' falhou",
-    "WARNING investimentos.fontes.bcb: Falha ao obter IPCA no BCB: HTTPSConnectionPool(host='api.bcb.gov.br', port=443): Read timed out. (read timeout=30)",
-    "WARNING investimentos.fontes.bcb: Falha ao obter IGP-M no BCB: HTTPSConnectionPool(host='api.bcb.gov.br', port=443): Read timed out. (read timeout=30)",
-    "WARNING investimentos.fontes.bcb: Falha ao obter Selic no BCB: HTTPSConnectionPool(host='api.bcb.gov.br', port=443): Read timed out. (read timeout=30)",
-    "WARNING investimentos.fontes.bcb: Falha ao obter CDI diário no BCB (HTTPSConnectionPool(host='api.bcb.gov.br', port=443): Read timed out. (read timeout=30)); tentando CDI anualizado.",
-    "WARNING investimentos.fontes.bcb: Falha ao obter dólar no BCB: 502 Server Error: Bad Gateway for url: https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados/ultimos/1?formato=json",
-    "WARNING investimentos.fontes.yahoo: Sem cotação para BRL=X"
+    "WARNING investimentos.fontes.bcb: BCB tentativa 1/3 falhou (HTTPSConnectionPool(host='api.bcb.gov.br', port=443): Read timed out. (read timeout=30)); aguardando.",
+    "WARNING investimentos.fontes.bcb: BCB tentativa 2/3 falhou (HTTPSConnectionPool(host='api.bcb.gov.br', port=443): Read timed out. (read timeout=30)); aguardando."
   ]
 }
