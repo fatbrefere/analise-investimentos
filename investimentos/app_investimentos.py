@@ -371,6 +371,21 @@ elif pagina == "Consenso":
 
 elif pagina == "Carteira e diversificação":
     st.title("Carteira e diversificação")
+    # Em app público, a carteira fica atrás de senha (Secrets: senha_carteira = "...").
+    senha_exigida = None
+    try:
+        senha_exigida = st.secrets.get("senha_carteira")
+    except Exception:  # noqa: BLE001 - sem arquivo de secrets
+        senha_exigida = None
+    if senha_exigida:
+        if not st.session_state.get("carteira_liberada"):
+            senha = st.text_input("Senha para ver a carteira", type="password")
+            if senha and senha == str(senha_exigida):
+                st.session_state["carteira_liberada"] = True
+                st.rerun()
+            elif senha:
+                st.error("Senha incorreta.")
+            st.stop()
     carteira_secrets = None
     try:
         carteira_secrets = st.secrets.get("carteira_csv")  # Streamlit Cloud: Settings > Secrets

@@ -87,8 +87,8 @@ faz commit dos arquivos de `investimentos/data/`. Para ativar:
 1. Entre em https://share.streamlit.io com a conta do GitHub.
 2. *Create app* > *Deploy a public app from GitHub*: repositório
    `fatbrefere/analise-investimentos`, branch `main`, arquivo
-   `investimentos/app_investimentos.py`. Como o repositório é privado, autorize
-   o app do Streamlit a acessá-lo quando for pedido.
+   `investimentos/app_investimentos.py`. O plano gratuito permite só um app
+   privado por conta; com o repositório público não há limite.
 3. Em *Advanced settings* escolha Python 3.12.
 4. Depois do deploy, abra a URL no celular e use "Adicionar à tela inicial".
 
@@ -97,10 +97,13 @@ O painel na nuvem lê os CSVs do repositório, então cada commit do workflow
 download do GitHub e diagnóstico ficam ocultos lá.
 
 Para ver a sua carteira no celular sem colocá-la no Git: no painel do
-Streamlit Cloud, *Settings > Secrets*, cole o conteúdo do seu `carteira.csv`
-assim (as três aspas são obrigatórias):
+Streamlit Cloud, *Settings > Secrets*, defina uma senha e cole o conteúdo do
+seu `carteira.csv` assim (as três aspas são obrigatórias). Com a senha
+definida, a página "Carteira" só abre depois de digitá-la, mesmo em app
+público:
 
 ```toml
+senha_carteira = "escolha-uma-senha"
 carteira_csv = """
 ticker,tipo,moeda,quantidade,preco_medio,valor_atual,descricao
 PETR4,Ação BR,BRL,100,32.50,,Petrobras
