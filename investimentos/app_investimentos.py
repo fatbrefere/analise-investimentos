@@ -359,8 +359,8 @@ elif pagina == "Consenso":
     st.markdown("Aqui vale a **posição** em cada ranking, não a aprovação: uma ação pode estar entre as primeiras no modelo e ainda assim não cumprir todos os critérios dele. "
                 "Quanto mais modelos a colocam no topo, mais robusta é a escolha. Posição vazia na Fórmula Mágica significa EV/EBIT ou ROIC negativo.")
     c1, c2 = st.columns(2)
-    top_n = c1.slider("Posição máxima (top N)", 5, 100, 20, 5)
-    minimo_modelos = c2.slider("Em quantos modelos (de 4)", 1, 4, 4)
+    top_n = int(c1.number_input("Até qual posição considerar (top N)", min_value=1, max_value=int(len(ranking)) or 1, value=20, step=1, help="Digite qualquer número: 20, 30, 50..."))
+    minimo_modelos = int(c2.number_input("Em quantos modelos (de 4)", min_value=1, max_value=4, value=4, step=1))
     cons = estrategias.consenso_top_n(ranking, top_n=top_n, minimo_modelos=minimo_modelos)
     if cons.empty:
         st.info(f"Nenhum papel está no top {top_n} de {minimo_modelos} modelos hoje. Os modelos puxam para lados diferentes (dividendos altos e crescimento raramente andam juntos); reduza o número de modelos ou aumente o N.")
