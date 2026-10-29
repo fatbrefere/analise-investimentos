@@ -1,10 +1,10 @@
 {
-  "atualizado_em": "2026-10-28T02:33:08",
-  "duracao_segundos": 43.9,
+  "atualizado_em": "2026-10-29T01:02:12",
+  "duracao_segundos": 56.4,
   "papeis_br": 995,
   "papeis_us": 71,
   "taxa_minima_atratividade": 0.1375,
-  "setores_br_em_cache": 152,
+  "setores_br_em_cache": 153,
   "etapas": {
     "fundamentus": {
       "ok": true,
@@ -27,5 +27,7 @@
       "erro": null
     }
   },
-  "avisos": []
+  "avisos": [
+    "WARNING investimentos.fontes.fundamentus: Fundamentus: colunas não encontradas no cabeçalho: ['divida_patrimonio'] (cabeçalho: ['Papel', 'Cotação', 'P/L', 'P/VP', 'PSR', 'Div.Yield', 'P/Ativo', 'P/Cap.Giro', 'P/EBIT', 'P/Ativ Circ.Liq', 'EV/EBIT', 'EV/EBITDA', 'Mrg Bruta', 'Mrg Ebit', 'Mrg. Líq.', 'Liq. Corr.', 'ROIC', 'ROE', 'Liq.2meses', 'Patrim. Líq', 'Dív.Líq/ Patrim.', 'Cresc. Rec.5a'])"
+  ]
 }
