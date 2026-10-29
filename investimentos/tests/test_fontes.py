@@ -280,3 +280,21 @@ def test_bcb_repete_em_erro_passageiro(monkeypatch):
     with pytest.raises(rq.HTTPError):
         bcb.obter_serie(12, 252)
     assert len(chamadas) == 1   # erro 400 não repete
+
+
+def test_parse_resultado_tolera_variacoes_no_cabecalho():
+    """Acentos, espaços duplos e NBSP no cabeçalho não podem deixar colunas vazias."""
+    html = html_resultado()
+    html = html.replace(">Dív.Brut/ Patrim.<", ">Div.Brut/\u00a0Patrim.<").replace(">Liq. Corr.<", ">Liq.  Corr.<").replace(">Mrg. Líq.<", ">Mrg. Liq.<")
+    df = fundamentus.parse_resultado(html).set_index("ticker")
+    assert df.loc["PETR4", "divida_patrimonio"] == pytest.approx(0.70)
+    assert df.loc["PETR4", "liquidez_corrente"] == pytest.approx(0.95)
+    assert df.loc["PETR4", "margem_liquida"] == pytest.approx(0.201)
+
+
+def test_parse_resultado_avisa_coluna_ausente(caplog):
+    html = html_resultado().replace(">Dív.Brut/ Patrim.<", ">Outra Coisa<")
+    with caplog.at_level("WARNING"):
+        df = fundamentus.parse_resultado(html)
+    assert df["divida_patrimonio"].isna().all()
+    assert "divida_patrimonio" in caplog.text

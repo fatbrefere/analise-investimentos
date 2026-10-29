@@ -10,6 +10,7 @@ from __future__ import annotations
 import io
 import logging
 import time
+import unicodedata
 from pathlib import Path
 
 import pandas as pd
@@ -55,6 +56,17 @@ def _normalizar_nome_coluna(nome: str) -> str:
     return " ".join(str(nome).split())
 
 
+def _chave_coluna(nome: str) -> str:
+    """Chave de comparação sem acentos, espaços ou pontuação: 'Dív.Brut/ Patrim.' -> 'divbrutpatrim'.
+
+    O Fundamentus muda detalhes do cabeçalho (acentos, espaços, NBSP) e a
+    comparação exata falhava em silêncio, deixando a coluna vazia.
+    """
+    texto = unicodedata.normalize("NFKD", str(nome))
+    texto = "".join(c for c in texto if not unicodedata.combining(c))
+    return "".join(c for c in texto.lower() if c.isalnum())
+
+
 def _tabela_para_strings(html: str) -> pd.DataFrame:
     """Lê a tabela de resultados como texto puro (sem conversão numérica automática).
 
@@ -82,9 +94,12 @@ def parse_resultado(html: str) -> pd.DataFrame:
     """Converte o HTML da página resultado.php no esquema comum."""
     tabela = _tabela_para_strings(html)
 
-    mapa = {_normalizar_nome_coluna(k): v for k, v in MAPA_COLUNAS.items()}
-    df = tabela.rename(columns=mapa)
+    mapa = {_chave_coluna(k): v for k, v in MAPA_COLUNAS.items()}
+    df = tabela.rename(columns={c: mapa[_chave_coluna(c)] for c in tabela.columns if _chave_coluna(c) in mapa})
     df = df[[c for c in df.columns if c in MAPA_COLUNAS.values()]].copy()
+    faltantes = sorted(set(MAPA_COLUNAS.values()) - set(df.columns))
+    if faltantes:
+        log.warning("Fundamentus: colunas não encontradas no cabeçalho: %s (cabeçalho: %s)", faltantes, list(tabela.columns))
 
     for coluna in df.columns:
         if coluna == "ticker":
