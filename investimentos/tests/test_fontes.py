@@ -105,7 +105,7 @@ def test_normalizar_info_yahoo():
     assert linha["pais"] == "US" and linha["moeda"] == "USD"
     assert linha["dy"] == pytest.approx(1.0 / 200.0)
     assert linha["ev_ebit"] == pytest.approx(3_000e9 / 120e9)
-    assert linha["divida_patrimonio"] == pytest.approx(1.5)
+    assert linha["divida_patrimonio"] == pytest.approx((100e9 - 60e9) / 70e9)   # dívida líquida / patrimônio
     # ROIC = EBIT * (1 - 0.15) / (70 + 100 - 60) bi
     assert linha["roic"] == pytest.approx(120e9 * 0.85 / 110e9)
     assert linha["margem_ebit"] == pytest.approx(0.3)
@@ -285,7 +285,7 @@ def test_bcb_repete_em_erro_passageiro(monkeypatch):
 def test_parse_resultado_tolera_variacoes_no_cabecalho():
     """Acentos, espaços duplos e NBSP no cabeçalho não podem deixar colunas vazias."""
     html = html_resultado()
-    html = html.replace(">Dív.Brut/ Patrim.<", ">Div.Brut/\u00a0Patrim.<").replace(">Liq. Corr.<", ">Liq.  Corr.<").replace(">Mrg. Líq.<", ">Mrg. Liq.<")
+    html = html.replace(">Dív.Líq/ Patrim.<", ">Div.Liq/\u00a0Patrim.<").replace(">Liq. Corr.<", ">Liq.  Corr.<").replace(">Mrg. Líq.<", ">Mrg. Liq.<")
     df = fundamentus.parse_resultado(html).set_index("ticker")
     assert df.loc["PETR4", "divida_patrimonio"] == pytest.approx(0.70)
     assert df.loc["PETR4", "liquidez_corrente"] == pytest.approx(0.95)
@@ -293,7 +293,7 @@ def test_parse_resultado_tolera_variacoes_no_cabecalho():
 
 
 def test_parse_resultado_avisa_coluna_ausente(caplog):
-    html = html_resultado().replace(">Dív.Brut/ Patrim.<", ">Outra Coisa<")
+    html = html_resultado().replace(">Dív.Líq/ Patrim.<", ">Outra Coisa<")
     with caplog.at_level("WARNING"):
         df = fundamentus.parse_resultado(html)
     assert df["divida_patrimonio"].isna().all()

@@ -27,10 +27,11 @@ COLUNAS_FUNDAMENTOS = [
     "ev_ebitda",         # Enterprise Value / EBITDA
     "roic",              # Retorno sobre capital investido (fração)
     "roe",               # Retorno sobre patrimônio (fração)
+    "margem_bruta",      # Margem bruta (fração)
     "margem_ebit",       # Margem EBIT (fração)
     "margem_liquida",    # Margem líquida (fração)
     "liquidez_corrente", # Ativo circulante / Passivo circulante
-    "divida_patrimonio", # Dívida bruta / Patrimônio líquido
+    "divida_patrimonio", # Dívida líquida (dívida - caixa) / Patrimônio líquido; negativo = caixa líquido
     "cresc_receita_5a",  # Crescimento da receita em 5 anos (fração)
     "liquidez",          # Liquidez de negociação (R$ em 2 meses ou US$ volume médio diário)
     "patrimonio_liquido",

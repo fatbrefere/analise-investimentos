@@ -90,7 +90,7 @@ def tabela_formatada(df: pd.DataFrame, colunas: dict[str, str]) -> pd.DataFrame:
     """Seleciona e renomeia colunas; percentuais (fração) viram % com 1 casa."""
     presentes = {k: v for k, v in colunas.items() if k in df.columns}
     saida = df[list(presentes)].copy()
-    pct = {"dy", "roic", "roe", "margem_liquida", "margem_ebit", "cresc_receita_5a", "margem_seguranca_graham", "desconto_preco_teto", "earnings_yield", "resultado_pct", "pct_atual", "pct_alvo", "diferenca_pp"}
+    pct = {"dy", "roic", "roe", "margem_liquida", "margem_bruta", "margem_ebit", "cresc_receita_5a", "margem_seguranca_graham", "desconto_preco_teto", "earnings_yield", "resultado_pct", "pct_atual", "pct_alvo", "diferenca_pp"}
     for coluna in saida.columns:
         if coluna in pct:
             saida[coluna] = (saida[coluna] * 100).round(1)
@@ -111,7 +111,7 @@ def botoes_exportar(df: pd.DataFrame, nome: str) -> None:
 COLUNAS_BASE = {
     "ticker": "Papel", "nome": "Empresa", "pais": "País", "setor": "Setor", "preco": "Preço",
     "pl": "P/L", "pvp": "P/VP", "dy": "DY %", "ev_ebit": "EV/EBIT", "roic": "ROIC %", "roe": "ROE %",
-    "margem_liquida": "Marg. Líq. %", "divida_patrimonio": "Dív/PL", "liquidez_corrente": "Liq. Corr.",
+    "margem_liquida": "Marg. Líq. %", "margem_bruta": "Marg. Bruta %", "divida_patrimonio": "Dív.Líq/PL", "liquidez_corrente": "Liq. Corr.",
     "cresc_receita_5a": "Cresc. Rec. %", "earnings_yield": "Earnings Yield %", "bate_inflacao": "Bate inflação?",
 }
 
@@ -311,7 +311,7 @@ if pagina == "Visão geral":
         st.markdown("**Graham**")
         st.dataframe(tabela_formatada(ranking.sort_values(["pontos_graham", "margem_seguranca_graham"], ascending=False).head(10), {"ticker": "Papel", "pais": "País", "preco": "Preço", "preco_justo_graham": "Preço justo", "margem_seguranca_graham": "Margem seg. %"}), hide_index=True, use_container_width=True)
         st.markdown("**Buffett**")
-        st.dataframe(tabela_formatada(ranking.sort_values(["pontos_buffett", "rank_qualidade"], ascending=[False, True]).head(10), {"ticker": "Papel", "pais": "País", "roe": "ROE %", "margem_liquida": "Marg. Líq. %", "pl": "P/L", "divida_patrimonio": "Dív/PL"}), hide_index=True, use_container_width=True)
+        st.dataframe(tabela_formatada(ranking.sort_values(["pontos_buffett", "rank_qualidade"], ascending=[False, True]).head(10), {"ticker": "Papel", "pais": "País", "roe": "ROE %", "margem_liquida": "Marg. Líq. %", "pl": "P/L", "divida_patrimonio": "Dív.Líq/PL"}), hide_index=True, use_container_width=True)
 
 elif pagina == "Fórmula Mágica":
     st.title("Fórmula Mágica (Joel Greenblatt)")
@@ -325,7 +325,7 @@ elif pagina == "Fórmula Mágica":
 
 elif pagina == "Graham":
     st.title("Valor (Benjamin Graham)")
-    st.markdown("Critérios do *Investidor Inteligente*: P/L ≤ 15, P/VP ≤ 1,5, P/L × P/VP ≤ 22,5, liquidez corrente ≥ 1,5, dívida ≤ patrimônio e "
+    st.markdown("Critérios do *Investidor Inteligente*: P/L ≤ 15, P/VP ≤ 1,5, P/L × P/VP ≤ 22,5, liquidez corrente ≥ 1,5, dívida líquida ≤ patrimônio e "
                 "**margem de segurança** sobre o preço justo = √(22,5 × LPA × VPA). Cada critério atendido vale 1 ponto.")
     lista = ranking.sort_values(["pontos_graham", "margem_seguranca_graham"], ascending=False)
     minimo = st.slider("Pontos mínimos (7 = todos os critérios)", 0, 7, 7)
@@ -344,12 +344,12 @@ elif pagina == "Dividendos":
 
 elif pagina == "Buffett":
     st.title("Qualidade (Warren Buffett)")
-    st.markdown("Empresas boas a preço razoável: **ROE ≥ 15%**, margem líquida ≥ 10%, dívida ≤ 50% do patrimônio, receita crescendo, P/L ≤ 20 e P/VP ≤ 3. "
+    st.markdown("Empresas boas a preço razoável: **ROE ≥ 15%**, margem líquida ≥ 10%, dívida líquida ≤ 50% do patrimônio (negativo = mais caixa que dívida), receita crescendo, P/L ≤ 20 e P/VP ≤ 3. "
                 "Os números não capturam vantagem competitiva e gestão, que você avalia lendo sobre a empresa.")
     lista = ranking.sort_values(["pontos_buffett", "rank_qualidade"], ascending=[False, True])
     minimo = st.slider("Pontos mínimos (6 = todos os critérios)", 0, 6, 6)
     lista = lista[lista["pontos_buffett"] >= minimo]
-    mostrar_lista(lista, {"pontos_buffett": "Pontos", "roe": "ROE %", "margem_liquida": "Marg. Líq. %", "divida_patrimonio": "Dív/PL", "cresc_receita_5a": "Cresc. Rec. %"}, "buffett", "roe")
+    mostrar_lista(lista, {"pontos_buffett": "Pontos", "roe": "ROE %", "margem_liquida": "Marg. Líq. %", "divida_patrimonio": "Dív.Líq/PL", "cresc_receita_5a": "Cresc. Rec. %"}, "buffett", "roe")
 
 elif pagina == "Consenso":
     st.title("Consenso entre estratégias")

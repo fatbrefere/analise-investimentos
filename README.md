@@ -24,7 +24,9 @@ Todos os limites (DY mínimo, P/L máximo, ROE mínimo etc.) ficam em
 ## Fontes de dados (todas gratuitas, sem chave)
 
 - **Fundamentus** (`fundamentus.com.br/resultado.php`): todos os papéis da B3 com
-  P/L, P/VP, DY, EV/EBIT, ROIC, ROE, margens, volume médio diário ("Liq.2meses") e dívida. O setor de cada
+  P/L, P/VP, DY, EV/EBIT, ROIC, ROE, margens, margens, volume médio diário ("Liq.2meses") e dívida líquida sobre patrimônio
+  (negativa quando a empresa tem mais caixa que dívida). Nas ações americanas a dívida
+  líquida é calculada do balanço do Yahoo para ficar comparável. O setor de cada
   papel vem da página de detalhes e fica em cache em `investimentos/data/setores_br.csv`.
 - **Yahoo Finance** (biblioteca `yfinance`): fundamentos das ações americanas da
   lista `TICKERS_US`, cotações dos ETFs e dos ativos da carteira, dólar reserva.

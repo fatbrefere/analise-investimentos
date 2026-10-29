@@ -40,7 +40,9 @@ MAPA_COLUNAS = {
     "ROE": "roe",
     "Liq.2meses": "liquidez",
     "Patrim. Líq": "patrimonio_liquido",
-    "Dív.Brut/ Patrim.": "divida_patrimonio",
+    "Dív.Líq/ Patrim.": "divida_patrimonio",   # dívida líquida (bruta - caixa) / patrimônio
+    "Dív.Brut/ Patrim.": "divida_patrimonio",  # nome antigo da coluna, mantido por segurança
+    "Mrg Bruta": "margem_bruta",
     "Cresc. Rec.5a": "cresc_receita_5a",
 }
 

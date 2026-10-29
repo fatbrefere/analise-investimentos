@@ -95,9 +95,13 @@ def normalizar_info(ticker: str, info: dict, dre: pd.DataFrame | None = None, ba
     if math.isnan(margem_liquida) and receita and not math.isnan(lucro) and receita > 0:
         margem_liquida = lucro / receita
 
-    divida_patrimonio = _num(info.get("debtToEquity"), escala=0.01)  # yfinance devolve em %
-    if math.isnan(divida_patrimonio) and patrimonio and not math.isnan(divida_total) and patrimonio > 0:
-        divida_patrimonio = divida_total / patrimonio
+    # Dívida líquida / patrimônio, igual ao Fundamentus (Dív.Líq/Patrim.); negativo = caixa líquido
+    if patrimonio and not math.isnan(patrimonio) and patrimonio > 0 and not math.isnan(divida_total):
+        divida_patrimonio = (divida_total - (0 if math.isnan(caixa) else caixa)) / patrimonio
+    else:
+        divida_patrimonio = _num(info.get("debtToEquity"), escala=0.01)  # dívida bruta em %, reserva
+
+    margem_bruta = _num(info.get("grossMargins"))
 
     pvp = _num(info.get("priceToBook"))
     vpa = _num(info.get("bookValue"))
@@ -121,6 +125,7 @@ def normalizar_info(ticker: str, info: dict, dre: pd.DataFrame | None = None, ba
         "ev_ebitda": ev_ebitda,
         "roic": roic,
         "roe": _num(info.get("returnOnEquity")),
+        "margem_bruta": margem_bruta,
         "margem_ebit": margem_ebit,
         "margem_liquida": margem_liquida,
         "liquidez_corrente": _num(info.get("currentRatio")),
