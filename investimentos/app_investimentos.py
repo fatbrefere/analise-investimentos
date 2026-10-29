@@ -362,18 +362,35 @@ elif pagina == "Consenso":
     top_n = int(c1.number_input("Até qual posição considerar (top N)", min_value=1, max_value=int(len(ranking)) or 1, value=20, step=1, help="Digite qualquer número: 20, 30, 50..."))
     minimo_modelos = int(c2.number_input("Em quantos modelos (de 4)", min_value=1, max_value=4, value=4, step=1))
     cons = estrategias.consenso_top_n(ranking, top_n=top_n, minimo_modelos=minimo_modelos)
+    colunas_cons = {"ticker": "Papel", "pais": "País", "setor": "Setor", "preco": "Preço", "modelos_no_top": f"Modelos no top {top_n}", "posicao_magica": "# Mágica", "posicao_graham": "# Graham", "posicao_dividendos": "# Dividendos", "posicao_buffett": "# Buffett", "soma_posicoes": "Soma posições", "estrategias_aprovado": "Aprovado em", "pl": "P/L", "pvp": "P/VP", "dy": "DY %", "roe": "ROE %", "divida_patrimonio": "Dív.Líq/PL"}
     if cons.empty:
-        st.info(f"Nenhum papel está no top {top_n} de {minimo_modelos} modelos hoje. Os modelos puxam para lados diferentes (dividendos altos e crescimento raramente andam juntos); reduza o número de modelos ou aumente o N.")
+        st.info(f"Nenhum papel está no top {top_n} em {minimo_modelos} modelos hoje: os modelos puxam para lados diferentes (dividendos altos e crescimento raramente andam juntos).")
+        # mostra os mais próximos: quem está no top N no maior número possível de modelos
+        for n in range(minimo_modelos - 1, 0, -1):
+            proximos = estrategias.consenso_top_n(ranking, top_n=top_n, minimo_modelos=n)
+            if not proximos.empty:
+                st.markdown(f"**Mais próximos:** no top {top_n} em {n} de 4 modelos. A posição fora do top {top_n} mostra o que falta em cada um.")
+                st.dataframe(tabela_formatada(proximos.head(30), colunas_cons), use_container_width=True, hide_index=True)
+                break
     else:
-        st.dataframe(tabela_formatada(cons, {"ticker": "Papel", "pais": "País", "setor": "Setor", "preco": "Preço", "modelos_no_top": f"Modelos no top {top_n}", "posicao_magica": "# Mágica", "posicao_graham": "# Graham", "posicao_dividendos": "# Dividendos", "posicao_buffett": "# Buffett", "soma_posicoes": "Soma posições", "estrategias_aprovado": "Aprovado em", "pl": "P/L", "pvp": "P/VP", "dy": "DY %", "roe": "ROE %", "divida_patrimonio": "Dív.Líq/PL"}), use_container_width=True, hide_index=True)
+        st.dataframe(tabela_formatada(cons, colunas_cons), use_container_width=True, hide_index=True)
         botoes_exportar(cons, f"top{top_n}_em_{minimo_modelos}_modelos")
 
     st.subheader("Aprovação nos critérios")
+    st.markdown("Aqui vale **cumprir todos os critérios** de cada modelo (P/L, DY, dívida etc.), independentemente da posição. "
+                "Um papel pode ser aprovado em Dividendos e, mesmo assim, estar na 68ª posição desse ranking.")
     minimo = st.slider("Mínimo de estratégias aprovadas", 0, 4, 1)
-    so_inflacao = st.checkbox("Só quem bate a taxa mínima de atratividade (earnings yield)", value=False)
+    c1, c2 = st.columns(2)
+    so_inflacao = c1.checkbox("Só quem bate a taxa mínima de atratividade (earnings yield)", value=False)
+    so_top_n = c2.checkbox(f"Só quem está até a posição {top_n} nos modelos em que foi aprovado", value=False)
     lista = ranking[ranking["qtd_estrategias_aprovado"] >= minimo]
     if so_inflacao:
         lista = lista[lista["bate_inflacao"] == True]  # noqa: E712
+    if so_top_n:
+        dentro = pd.Series(True, index=lista.index)
+        for chave in ("magica", "graham", "dividendos", "buffett"):
+            dentro &= ~lista[f"aprovado_{chave}"] | (lista[f"posicao_{chave}"] <= top_n)
+        lista = lista[dentro]
     mostrar_lista(lista, {"pontuacao_geral": "Pontuação", "qtd_estrategias_aprovado": "Nº estratégias", "estrategias_aprovado": "Aprovado em", "posicao_magica": "# Mágica", "posicao_graham": "# Graham", "posicao_dividendos": "# Dividendos", "posicao_buffett": "# Buffett", "margem_seguranca_graham": "Margem Graham %", "desconto_preco_teto": "Desconto Bazin %"}, "consenso", "pontuacao_geral")
     st.subheader("Mapa: preço x qualidade")
     disp = ranking[(ranking["pl"] > 0) & (ranking["pl"] < 60) & ranking["roe"].notna()]
