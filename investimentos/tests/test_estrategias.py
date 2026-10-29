@@ -102,3 +102,15 @@ def test_consolidar_com_parametros(base):
 def test_consolidar_vazio():
     vazio = estrategias.filtrar_liquidez(fundamentus.parse_resultado(html_resultado()).iloc[0:0])
     assert estrategias.consolidar(vazio).empty
+
+
+def test_posicoes_e_consenso_top_n(base):
+    r = estrategias.consolidar(base)
+    for col in estrategias.COLUNAS_POSICAO[1:]:
+        assert sorted(r[col].tolist()) == list(range(1, len(r) + 1))   # posição única de 1..N
+    assert r["posicao_magica"].isna().sum() == 2                        # MGLU3 e BBAS3 sem EV/EBIT válido
+    todos = estrategias.consenso_top_n(r, top_n=3, minimo_modelos=4)
+    assert set(todos["ticker"]) <= set(r["ticker"]) and (todos["modelos_no_top"] == 4).all()
+    algum = estrategias.consenso_top_n(r, top_n=3, minimo_modelos=1)
+    assert len(algum) >= 3 and algum["modelos_no_top"].is_monotonic_decreasing
+    assert "ITSA4" in set(estrategias.consenso_top_n(r, top_n=3, minimo_modelos=3)["ticker"])

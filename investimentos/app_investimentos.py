@@ -355,12 +355,26 @@ elif pagina == "Consenso":
     st.title("Consenso entre estratégias")
     st.markdown("Pontuação geral = 10 pontos por estratégia aprovada + pontos parciais de Graham, Dividendos e Buffett + bônus pela posição na Fórmula Mágica. "
                 "Quanto mais métodos diferentes concordam, menor a chance de o preço baixo ser uma armadilha.")
+    st.subheader("Top N em todos os modelos")
+    st.markdown("Aqui vale a **posição** em cada ranking, não a aprovação: uma ação pode estar entre as primeiras no modelo e ainda assim não cumprir todos os critérios dele. "
+                "Quanto mais modelos a colocam no topo, mais robusta é a escolha. Posição vazia na Fórmula Mágica significa EV/EBIT ou ROIC negativo.")
+    c1, c2 = st.columns(2)
+    top_n = c1.slider("Posição máxima (top N)", 5, 100, 20, 5)
+    minimo_modelos = c2.slider("Em quantos modelos (de 4)", 1, 4, 4)
+    cons = estrategias.consenso_top_n(ranking, top_n=top_n, minimo_modelos=minimo_modelos)
+    if cons.empty:
+        st.info(f"Nenhum papel está no top {top_n} de {minimo_modelos} modelos hoje. Os modelos puxam para lados diferentes (dividendos altos e crescimento raramente andam juntos); reduza o número de modelos ou aumente o N.")
+    else:
+        st.dataframe(tabela_formatada(cons, {"ticker": "Papel", "pais": "País", "setor": "Setor", "preco": "Preço", "modelos_no_top": f"Modelos no top {top_n}", "posicao_magica": "# Mágica", "posicao_graham": "# Graham", "posicao_dividendos": "# Dividendos", "posicao_buffett": "# Buffett", "soma_posicoes": "Soma posições", "estrategias_aprovado": "Aprovado em", "pl": "P/L", "pvp": "P/VP", "dy": "DY %", "roe": "ROE %", "divida_patrimonio": "Dív.Líq/PL"}), use_container_width=True, hide_index=True)
+        botoes_exportar(cons, f"top{top_n}_em_{minimo_modelos}_modelos")
+
+    st.subheader("Aprovação nos critérios")
     minimo = st.slider("Mínimo de estratégias aprovadas", 0, 4, 1)
     so_inflacao = st.checkbox("Só quem bate a taxa mínima de atratividade (earnings yield)", value=False)
     lista = ranking[ranking["qtd_estrategias_aprovado"] >= minimo]
     if so_inflacao:
         lista = lista[lista["bate_inflacao"] == True]  # noqa: E712
-    mostrar_lista(lista, {"pontuacao_geral": "Pontuação", "qtd_estrategias_aprovado": "Nº estratégias", "estrategias_aprovado": "Aprovado em", "posicao_magica": "# Mágica", "margem_seguranca_graham": "Margem Graham %", "desconto_preco_teto": "Desconto Bazin %", "pontos_buffett": "Pts Buffett"}, "consenso", "pontuacao_geral")
+    mostrar_lista(lista, {"pontuacao_geral": "Pontuação", "qtd_estrategias_aprovado": "Nº estratégias", "estrategias_aprovado": "Aprovado em", "posicao_magica": "# Mágica", "posicao_graham": "# Graham", "posicao_dividendos": "# Dividendos", "posicao_buffett": "# Buffett", "margem_seguranca_graham": "Margem Graham %", "desconto_preco_teto": "Desconto Bazin %"}, "consenso", "pontuacao_geral")
     st.subheader("Mapa: preço x qualidade")
     disp = ranking[(ranking["pl"] > 0) & (ranking["pl"] < 60) & ranking["roe"].notna()]
     if not disp.empty:

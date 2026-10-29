@@ -194,6 +194,12 @@ def consolidar(df: pd.DataFrame, taxa_minima: float = math.nan, parametros: dict
     for coluna in ("aprovado_magica", "aprovado_graham", "aprovado_dividendos", "aprovado_buffett"):
         resultado[coluna] = resultado[coluna].fillna(False).astype(bool)
 
+    # Posição (1 = melhor) em cada modelo, pela mesma ordenação que cada função devolve.
+    # Na Fórmula Mágica só quem tem EV/EBIT e ROIC positivos recebe posição.
+    resultado["posicao_graham"] = resultado["ticker"].map({t: i + 1 for i, t in enumerate(g["ticker"])})
+    resultado["posicao_dividendos"] = resultado["ticker"].map({t: i + 1 for i, t in enumerate(d["ticker"])})
+    resultado["posicao_buffett"] = resultado["ticker"].map({t: i + 1 for i, t in enumerate(b["ticker"])})
+
     resultado = adicionar_earnings_yield(resultado, taxa_minima)
     resultado["qtd_estrategias_aprovado"] = resultado[["aprovado_magica", "aprovado_graham", "aprovado_dividendos", "aprovado_buffett"]].sum(axis=1)
     resultado["estrategias_aprovado"] = resultado.apply(
@@ -212,3 +218,20 @@ def consolidar(df: pd.DataFrame, taxa_minima: float = math.nan, parametros: dict
         + np.where(resultado["posicao_magica"].notna(), np.clip(7 - resultado["posicao_magica"].fillna(999) / 10, 0, 7), 0)
     )
     return resultado.sort_values(["pontuacao_geral", "qtd_estrategias_aprovado"], ascending=False).reset_index(drop=True)
+
+
+COLUNAS_POSICAO = ["posicao_magica", "posicao_graham", "posicao_dividendos", "posicao_buffett"]
+
+
+def consenso_top_n(ranking: pd.DataFrame, top_n: int = 20, minimo_modelos: int = 4) -> pd.DataFrame:
+    """Papéis que ficaram entre as `top_n` primeiras posições em pelo menos `minimo_modelos` modelos.
+
+    Ordena por quantidade de modelos em que está no top N e, no desempate, pela
+    soma das posições (quem falta posição na Mágica conta como fora do top).
+    """
+    base = ranking.copy()
+    posicoes = base[COLUNAS_POSICAO]
+    base["modelos_no_top"] = (posicoes <= top_n).sum(axis=1)
+    base["soma_posicoes"] = posicoes.fillna(len(base) + 1).sum(axis=1)
+    sel = base[base["modelos_no_top"] >= minimo_modelos]
+    return sel.sort_values(["modelos_no_top", "soma_posicoes"], ascending=[False, True]).reset_index(drop=True)
