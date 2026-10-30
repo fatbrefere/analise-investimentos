@@ -118,6 +118,30 @@ PETR4,Ação BR,BRL,100,32.50,,Petrobras
 Crie uma tarefa diária que execute `atualizar_investimentos.bat` (ele grava o
 log em `investimentos/data/atualizacao.log`).
 
+## Análise qualitativa por IA (opcional)
+
+Todo dia, depois da coleta, o Claude pode analisar as ações do consenso e as
+da sua carteira: por que cada uma está barata, oportunidade ou armadilha,
+riscos, catalisadores, sensibilidade a juros/dólar/commodities/consumo, mais
+um panorama do momento e alertas para a carteira. Aparece na página
+"Análise da IA".
+
+Para ligar:
+
+1. Crie uma chave em https://console.anthropic.com (Settings > API keys).
+2. No GitHub: *Settings > Secrets and variables > Actions > New repository secret*,
+   nome `ANTHROPIC_API_KEY`, valor = a chave.
+3. Opcional: outro secret `CARTEIRA_CSV` com o conteúdo do seu `carteira.csv`,
+   para a IA incluir a sua carteira nos alertas.
+
+Custo aproximado: 30 a 40 papéis por dia com o modelo `claude-opus-5-5`
+ficam em torno de US$ 0,50 a 1,00 por execução. Para reduzir, use
+`--maximo 15` no workflow ou defina `INVESTIMENTOS_MODELO_IA=claude-sonnet-5-5`.
+Localmente: `ANTHROPIC_API_KEY=... python -m investimentos.analise_ia`.
+
+As notícias vêm do RSS do Google Notícias (gratuito). Nada disso é
+recomendação de investimento: a IA organiza o raciocínio, a decisão é sua.
+
 ## Estrutura
 
 ```
@@ -127,6 +151,7 @@ investimentos/
 ├── config.py              parâmetros das estratégias, listas de tickers, alocação alvo
 ├── estrategias.py         Fórmula Mágica, Graham, Bazin/Barsi, Buffett e consolidação
 ├── carteira.py            valorização, diversificação e sugestão de aporte
+├── analise_ia.py          análise qualitativa diária com o Claude (opcional)
 ├── fontes/
 │   ├── comum.py           esquema comum + conversão de números no formato brasileiro
 │   ├── fundamentus.py     ações da B3

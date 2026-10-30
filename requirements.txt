@@ -8,3 +8,4 @@ requests
 lxml
 yfinance
 pytest
+anthropic

@@ -24,7 +24,15 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Atualizar fundamentos, macro e cotações
+        env:
+          CARTEIRA_CSV: ${{ secrets.CARTEIRA_CSV }}
         run: python -m investimentos.atualizar
+
+      - name: Análise qualitativa por IA (pulada se não houver ANTHROPIC_API_KEY)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CARTEIRA_CSV: ${{ secrets.CARTEIRA_CSV }}
+        run: python -m investimentos.analise_ia
 
       - name: Salvar dados no repositório
         run: |

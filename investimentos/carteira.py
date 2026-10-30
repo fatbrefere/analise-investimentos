@@ -26,7 +26,17 @@ COLUNAS_CARTEIRA = ["ticker", "tipo", "moeda", "quantidade", "preco_medio", "val
 
 
 def carregar_carteira(caminho: Path | None = None) -> pd.DataFrame:
-    """Lê carteira.csv (ou o exemplo, se o arquivo pessoal não existir)."""
+    """Lê carteira.csv, ou a variável de ambiente CARTEIRA_CSV, ou o exemplo.
+
+    CARTEIRA_CSV permite usar a carteira pessoal no GitHub Actions (como secret)
+    sem colocá-la no repositório.
+    """
+    import os
+    from io import StringIO
+
+    texto_env = os.environ.get("CARTEIRA_CSV", "").strip()
+    if caminho is None and texto_env:
+        return normalizar_carteira(pd.read_csv(StringIO(texto_env), dtype={"ticker": str, "tipo": str, "moeda": str, "descricao": str}))
     caminho = caminho or config.ARQUIVO_CARTEIRA
     if not Path(caminho).exists():
         caminho = config.ARQUIVO_CARTEIRA_EXEMPLO

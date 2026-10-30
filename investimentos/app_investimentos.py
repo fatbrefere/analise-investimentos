@@ -23,6 +23,7 @@ if str(RAIZ) not in sys.path:
 
 from investimentos import carteira as mod_carteira  # noqa: E402
 from investimentos import config, estrategias  # noqa: E402
+from investimentos.analise_ia import ARQ_ANALISE  # noqa: E402
 from investimentos.atualizar import ARQ_COTACOES, ARQ_FUNDAMENTOS, ARQ_MACRO, ARQ_STATUS  # noqa: E402
 from investimentos.fontes.bcb import juro_real  # noqa: E402
 
@@ -54,6 +55,11 @@ def carregar_macro() -> dict:
 @st.cache_data(ttl=600)
 def carregar_status() -> dict:
     return json.loads(ARQ_STATUS.read_text(encoding="utf-8")) if ARQ_STATUS.exists() else {}
+
+
+@st.cache_data(ttl=600)
+def carregar_analise_ia() -> dict:
+    return json.loads(ARQ_ANALISE.read_text(encoding="utf-8")) if ARQ_ANALISE.exists() else {}
 
 
 @st.cache_data(ttl=600)
@@ -125,7 +131,7 @@ status = carregar_status()
 
 with st.sidebar:
     st.title("📈 Análise de Ações")
-    pagina = st.radio("Página", ["Visão geral", "Fórmula Mágica", "Graham", "Dividendos", "Buffett", "Consenso", "Carteira e diversificação", "Histórico"])
+    pagina = st.radio("Página", ["Visão geral", "Análise da IA", "Fórmula Mágica", "Graham", "Dividendos", "Buffett", "Consenso", "Carteira e diversificação", "Histórico"])
     st.markdown("---")
     st.caption(f"Última atualização: {status.get('atualizado_em', 'nunca')}")
     if NA_NUVEM:
@@ -312,6 +318,85 @@ if pagina == "Visão geral":
         st.dataframe(tabela_formatada(ranking.sort_values(["pontos_graham", "margem_seguranca_graham"], ascending=False).head(10), {"ticker": "Papel", "pais": "País", "preco": "Preço", "preco_justo_graham": "Preço justo", "margem_seguranca_graham": "Margem seg. %"}), hide_index=True, use_container_width=True)
         st.markdown("**Buffett**")
         st.dataframe(tabela_formatada(ranking.sort_values(["pontos_buffett", "rank_qualidade"], ascending=[False, True]).head(10), {"ticker": "Papel", "pais": "País", "roe": "ROE %", "margem_liquida": "Marg. Líq. %", "pl": "P/L", "divida_patrimonio": "Dív.Líq/PL"}), hide_index=True, use_container_width=True)
+
+elif pagina == "Análise da IA":
+    st.title("Análise qualitativa da IA")
+    analise = carregar_analise_ia()
+    if not analise:
+        st.info("Ainda não há análise. Ela é gerada todo dia útil pelo GitHub Actions quando a chave `ANTHROPIC_API_KEY` está nos Secrets do repositório, "
+                "ou localmente com `python -m investimentos.analise_ia`.")
+        st.stop()
+    st.caption(f"Gerada em {analise.get('gerado_em')} com {analise.get('modelo')}. {analise.get('aviso')}")
+    pan = analise.get("panorama") or {}
+    if pan:
+        st.subheader("Panorama do momento")
+        st.markdown(pan.get("resumo", ""))
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown("**Temas dominantes**")
+            for t in pan.get("temas", []):
+                st.markdown(f"- {t}")
+        with c2:
+            st.markdown("**Setores favorecidos**")
+            for t in pan.get("setores_favorecidos", []):
+                st.markdown(f"- {t}")
+        with c3:
+            st.markdown("**Setores pressionados**")
+            for t in pan.get("setores_pressionados", []):
+                st.markdown(f"- {t}")
+        if pan.get("alertas_carteira"):
+            st.subheader("Alertas da carteira")
+            for a in pan["alertas_carteira"]:
+                (st.error if a.get("gravidade") == "alto" else st.warning if a.get("gravidade") == "atenção" else st.info)(f"**{a.get('ticker')}**: {a.get('mensagem')}")
+        if pan.get("sugestoes_diversificacao"):
+            st.subheader("Diversificação")
+            for t in pan["sugestoes_diversificacao"]:
+                st.markdown(f"- {t}")
+
+    papeis = analise.get("papeis", [])
+    st.subheader(f"Papéis analisados ({len(papeis)})")
+    ordem = {"oportunidade": 0, "estudar": 1, "armadilha provável": 2}
+    c1, c2, c3 = st.columns(3)
+    filtro_class = c1.multiselect("Classificação", list(ordem), default=list(ordem))
+    filtro_pais = c2.multiselect("País", sorted({p.get("pais") for p in papeis}), default=sorted({p.get("pais") for p in papeis}))
+    so_carteira = c3.checkbox("Só a minha carteira", value=False)
+    sel = [p for p in papeis if p.get("classificacao") in filtro_class and p.get("pais") in filtro_pais and (p.get("na_carteira") or not so_carteira)]
+    sel.sort(key=lambda p: (ordem.get(p.get("classificacao"), 9), -int(p.get("conviccao") or 0)))
+
+    resumo_df = pd.DataFrame([{"Papel": p["ticker"], "Empresa": p.get("empresa"), "Setor": p.get("setor"), "Classificação": p.get("classificacao"), "Convicção": p.get("conviccao"),
+                               "Por que barata": p.get("barata_por_que"), "Aprovado em": p.get("aprovado_em"), "Na carteira": "sim" if p.get("na_carteira") else ""} for p in sel])
+    if not resumo_df.empty:
+        st.dataframe(resumo_df, use_container_width=True, hide_index=True)
+        botoes_exportar(resumo_df, "analise_ia")
+    icones = {"oportunidade": "🟢", "estudar": "🟡", "armadilha provável": "🔴"}
+    for p in sel:
+        titulo = f"{icones.get(p.get('classificacao'), '')} {p['ticker']} · {p.get('empresa') or ''} · {p.get('classificacao')} (convicção {p.get('conviccao')}/5)"
+        with st.expander(titulo):
+            st.markdown(f"**Resumo.** {p.get('resumo', '')}")
+            st.markdown(f"**Tese.** {p.get('tese', '')}")
+            st.markdown(f"**Por que está barata:** {p.get('barata_por_que')}")
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("**Riscos**")
+                for r in p.get("riscos", []):
+                    st.markdown(f"- {r}")
+                st.markdown("**O que acompanhar**")
+                for r in p.get("o_que_acompanhar", []):
+                    st.markdown(f"- {r}")
+            with c2:
+                st.markdown("**Catalisadores**")
+                for r in p.get("catalisadores", []):
+                    st.markdown(f"- {r}")
+                sens = p.get("sensibilidade", {})
+                st.markdown("**Sensibilidade** (-2 a +2)")
+                st.markdown(f"- Queda dos juros: {sens.get('juros')}  ·  Alta do dólar: {sens.get('dolar')}  ·  Commodities: {sens.get('commodities')}  ·  Consumo: {sens.get('consumo')}  ·  Governo: {sens.get('governo')}")
+            st.markdown(f"**Notícias:** {p.get('noticias_relevantes', '')}")
+            if p.get("manchetes"):
+                with st.expander("Manchetes usadas"):
+                    for m in p["manchetes"]:
+                        st.markdown(f"- {m.get('data') or ''} · {m.get('fonte') or ''}: [{m.get('titulo')}]({m.get('link')})" if m.get("link") else f"- {m.get('data') or ''} · {m.get('fonte') or ''}: {m.get('titulo')}")
+    if analise.get("sem_analise"):
+        st.caption("Sem análise nesta rodada: " + ", ".join(analise["sem_analise"]))
 
 elif pagina == "Fórmula Mágica":
     st.title("Fórmula Mágica (Joel Greenblatt)")
