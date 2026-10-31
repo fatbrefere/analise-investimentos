@@ -1,5 +1,5 @@
 {
-  "data_referencia": "2026-10-30",
+  "data_referencia": "2026-10-31",
   "ipca_12m": 0.04576119675071877,
   "ipca_ultimo_mes": 0.008199999999999999,
   "ipca_mes_referencia": "09/2026",
@@ -7,13 +7,13 @@
   "igpm_12m": 0.052464866840352675,
   "ipca_esperado_12m": 0.045336,
   "juro_real_selic": 0.087724428420487,
-  "juro_real_cdi": 0.09309565521787033,
+  "juro_real_cdi": 0.09249335270758774,
   "meta_inflacao": 0.03,
   "selic_meta": 0.1375,
-  "cdi_12m": 0.14311702056365116,
+  "cdi_12m": 0.14248715596969208,
   "dolar": 5.4212,
   "fonte_dolar": "BCB PTAX",
   "fonte_cdi": "BCB 12 (acumulado dos últimos 12 meses)",
   "erros": {},
-  "atualizado_em": "2026-10-30T22:02:32"
+  "atualizado_em": "2026-10-31T02:40:57"
 }
