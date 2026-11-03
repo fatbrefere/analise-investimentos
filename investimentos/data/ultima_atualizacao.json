@@ -1,6 +1,6 @@
 {
-  "atualizado_em": "2026-10-31T02:40:58",
-  "duracao_segundos": 60.8,
+  "atualizado_em": "2026-11-03T04:00:58",
+  "duracao_segundos": 78.1,
   "papeis_br": 995,
   "papeis_us": 71,
   "taxa_minima_atratividade": 0.1375,
@@ -27,8 +27,5 @@
       "erro": null
     }
   },
-  "avisos": [
-    "ERROR yfinance: \n1 Failed download:",
-    "ERROR yfinance: ['VOO']: OperationalError('database is locked')"
-  ]
+  "avisos": []
 }
