@@ -1,10 +1,10 @@
 {
-  "atualizado_em": "2026-11-07T03:05:00",
-  "duracao_segundos": 36.3,
+  "atualizado_em": "2026-11-10T04:45:59",
+  "duracao_segundos": 42.3,
   "papeis_br": 998,
   "papeis_us": 71,
   "taxa_minima_atratividade": 0.1375,
-  "setores_br_em_cache": 164,
+  "setores_br_em_cache": 165,
   "etapas": {
     "fundamentus": {
       "ok": true,
