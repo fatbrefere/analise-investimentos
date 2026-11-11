@@ -1,6 +1,6 @@
 {
-  "atualizado_em": "2026-11-10T04:45:59",
-  "duracao_segundos": 42.3,
+  "atualizado_em": "2026-11-11T02:57:28",
+  "duracao_segundos": 41.4,
   "papeis_br": 998,
   "papeis_us": 71,
   "taxa_minima_atratividade": 0.1375,
@@ -27,7 +27,5 @@
       "erro": null
     }
   },
-  "avisos": [
-    "WARNING investimentos.fontes.bcb: Falha ao obter IPCA no BCB: Expecting value: line 1 column 1 (char 0)"
-  ]
+  "avisos": []
 }
