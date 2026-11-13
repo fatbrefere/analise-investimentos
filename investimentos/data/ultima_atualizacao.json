@@ -1,10 +1,10 @@
 {
-  "atualizado_em": "2026-11-12T04:04:03",
-  "duracao_segundos": 36.4,
+  "atualizado_em": "2026-11-13T03:33:26",
+  "duracao_segundos": 52.8,
   "papeis_br": 998,
   "papeis_us": 71,
   "taxa_minima_atratividade": 0.1375,
-  "setores_br_em_cache": 166,
+  "setores_br_em_cache": 168,
   "etapas": {
     "fundamentus": {
       "ok": true,
@@ -27,8 +27,5 @@
       "erro": null
     }
   },
-  "avisos": [
-    "ERROR yfinance: \n1 Failed download:",
-    "ERROR yfinance: ['IVVB11.SA']: OperationalError('database is locked')"
-  ]
+  "avisos": []
 }
