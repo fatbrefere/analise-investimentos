@@ -1,6 +1,6 @@
 {
-  "atualizado_em": "2026-11-20T04:13:20",
-  "duracao_segundos": 34.1,
+  "atualizado_em": "2026-11-21T04:14:20",
+  "duracao_segundos": 34.2,
   "papeis_br": 998,
   "papeis_us": 71,
   "taxa_minima_atratividade": 0.1375,
@@ -27,7 +27,5 @@
       "erro": null
     }
   },
-  "avisos": [
-    "WARNING investimentos.fontes.bcb: Falha ao obter Selic no BCB: Expecting value: line 1 column 1 (char 0)"
-  ]
+  "avisos": []
 }
