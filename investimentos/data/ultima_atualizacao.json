@@ -1,6 +1,6 @@
 {
-  "atualizado_em": "2026-11-26T05:22:03",
-  "duracao_segundos": 42.4,
+  "atualizado_em": "2026-11-27T05:17:28",
+  "duracao_segundos": 40.5,
   "papeis_br": 998,
   "papeis_us": 71,
   "taxa_minima_atratividade": 0.1375,
@@ -28,6 +28,7 @@
     }
   },
   "avisos": [
-    "WARNING investimentos.fontes.bcb: Falha ao obter IPCA no BCB: Expecting value: line 1 column 1 (char 0)"
+    "ERROR yfinance: \n1 Failed download:",
+    "ERROR yfinance: ['MXRF11.SA']: OperationalError('database is locked')"
   ]
 }
