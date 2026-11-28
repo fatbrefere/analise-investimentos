@@ -1,6 +1,6 @@
 {
-  "atualizado_em": "2026-11-27T05:17:28",
-  "duracao_segundos": 40.5,
+  "atualizado_em": "2026-11-28T04:54:30",
+  "duracao_segundos": 42.2,
   "papeis_br": 998,
   "papeis_us": 71,
   "taxa_minima_atratividade": 0.1375,
@@ -27,8 +27,5 @@
       "erro": null
     }
   },
-  "avisos": [
-    "ERROR yfinance: \n1 Failed download:",
-    "ERROR yfinance: ['MXRF11.SA']: OperationalError('database is locked')"
-  ]
+  "avisos": []
 }
